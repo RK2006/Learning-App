@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,32 @@ except Exception:  # pragma: no cover
 class LLMService:
     def __init__(self) -> None:
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = OpenAI(api_key=self.api_key) if self.api_key and OpenAI else None
+        self.client = OpenAI(api_key=self.api_key, timeout=30.0) if self.api_key and OpenAI else None
+
+    def _generate_json(self, prompt: str, name: str, schema: dict[str, Any]) -> dict[str, Any]:
+        if self.client is None:
+            raise RuntimeError("OpenAI is not configured")
+
+        response = self.client.responses.create(
+            model="gpt-4o-mini",
+            input=[{"role": "user", "content": prompt}],
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": name,
+                    "schema": schema,
+                    "strict": True,
+                }
+            },
+        )
+        try:
+            data = json.loads(response.output_text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("OpenAI returned invalid JSON") from exc
+
+        if not isinstance(data, dict):
+            raise RuntimeError("OpenAI returned an unexpected response shape")
+        return data
 
     def generate_learning_path(self, topic: str, goal: str, level: str, daily_time: int) -> list[dict[str, Any]]:
         if self.client is None:
@@ -30,18 +56,42 @@ class LLMService:
                 {"id": "7", "name": "Random Variables", "order": 7, "mastery": 10, "status": "locked"},
             ]
 
-        prompt = f"Create a 7-concept beginner-friendly learning path for {topic}. Goal: {goal}. Difficulty: {level}. Daily study time: {daily_time} minutes. Respond as JSON list of objects with id, name, order, mastery, status."
-        response = self.client.responses.create(
-            model="gpt-4o-mini",
-            input=[{"role": "user", "content": prompt}],
+        prompt = f"Create a 7-concept beginner-friendly learning path for {topic}. Goal: {goal}. Difficulty: {level}. Daily study time: {daily_time} minutes. Return a JSON object with a concepts array. Each concept must contain id, name, order, mastery, and status. Use completed for the first three concepts, current for the fourth, and locked for the rest."
+        data = self._generate_json(
+            prompt,
+            "learning_path",
+            {
+                "type": "object",
+                "properties": {
+                    "concepts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "name": {"type": "string"},
+                                "order": {"type": "integer"},
+                                "mastery": {"type": "integer", "minimum": 0, "maximum": 100},
+                                "status": {
+                                    "type": "string",
+                                    "enum": ["locked", "current", "completed", "needs-review"],
+                                },
+                            },
+                            "required": ["id", "name", "order", "mastery", "status"],
+                            "additionalProperties": False,
+                        },
+                        "minItems": 7,
+                        "maxItems": 7,
+                    }
+                },
+                "required": ["concepts"],
+                "additionalProperties": False,
+            },
         )
-        content = response.output_text
-        try:
-            import json
-            data = json.loads(content)
-            return data
-        except Exception:
-            return self.generate_learning_path(topic, goal, level, daily_time)
+        concepts = data.get("concepts")
+        if not isinstance(concepts, list):
+            raise RuntimeError("OpenAI response did not contain a concepts list")
+        return concepts
 
     def generate_lesson(self, topic: str, goal: str, level: str) -> dict[str, Any]:
         if self.client is None:
@@ -72,16 +122,38 @@ class LLMService:
             }
 
         prompt = f"Teach a short daily lesson on {topic}. Goal: {goal}. Difficulty: {level}. Produce JSON with concept, title, explanation, example, and two questions: one multiple choice and one short answer."
-        response = self.client.responses.create(
-            model="gpt-4o-mini",
-            input=[{"role": "user", "content": prompt}],
+        return self._generate_json(
+            prompt,
+            "lesson",
+            {
+                "type": "object",
+                "properties": {
+                    "concept": {"type": "string"},
+                    "title": {"type": "string"},
+                    "explanation": {"type": "string"},
+                    "example": {"type": "string"},
+                    "questions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "type": {"type": "string", "enum": ["multiple-choice", "short-answer"]},
+                                "prompt": {"type": "string"},
+                                "options": {"type": ["array", "null"], "items": {"type": "string"}},
+                                "correct_answer": {"type": ["string", "null"]},
+                            },
+                            "required": ["id", "type", "prompt", "options", "correct_answer"],
+                            "additionalProperties": False,
+                        },
+                        "minItems": 2,
+                        "maxItems": 2,
+                    },
+                },
+                "required": ["concept", "title", "explanation", "example", "questions"],
+                "additionalProperties": False,
+            },
         )
-        content = response.output_text
-        try:
-            import json
-            return json.loads(content)
-        except Exception:
-            return self.generate_lesson(topic, goal, level)
 
     def assess_answer(self, topic: str, answers: dict[str, str], lesson: dict[str, Any]) -> dict[str, Any]:
         if self.client is None:
@@ -94,13 +166,19 @@ class LLMService:
             }
 
         prompt = f"Evaluate this answer for a learning lesson on {topic}. Lesson: {lesson}. Answers: {answers}. Return JSON with score, correct, misconceptions, feedback, needs_review."
-        response = self.client.responses.create(
-            model="gpt-4o-mini",
-            input=[{"role": "user", "content": prompt}],
+        return self._generate_json(
+            prompt,
+            "assessment",
+            {
+                "type": "object",
+                "properties": {
+                    "score": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "correct": {"type": "boolean"},
+                    "misconceptions": {"type": "array", "items": {"type": "string"}},
+                    "feedback": {"type": "string"},
+                    "needs_review": {"type": "boolean"},
+                },
+                "required": ["score", "correct", "misconceptions", "feedback", "needs_review"],
+                "additionalProperties": False,
+            },
         )
-        content = response.output_text
-        try:
-            import json
-            return json.loads(content)
-        except Exception:
-            return self.assess_answer(topic, answers, lesson)
