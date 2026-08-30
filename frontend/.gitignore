@@ -1,0 +1,14 @@
+node_modules/
+dist/
+
+# tsc -b artifacts. tsconfig.node.json is `composite` (required by project
+# references), so without `noEmit` it emits vite.config.js next to the source --
+# and Vite resolves vite.config.js BEFORE vite.config.ts, so a stale compiled
+# copy silently wins over the real config. Both configs now set noEmit and
+# redirect tsBuildInfoFile into node_modules/.tmp; these entries are the backstop.
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+*.local
+.DS_Store
