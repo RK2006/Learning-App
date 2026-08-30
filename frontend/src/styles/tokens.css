@@ -1,0 +1,309 @@
+/*
+ * PRESSROOM — design tokens
+ *
+ * A risograph-printed workbook you can press.
+ *
+ * Deliberately not the AI-default look. Every neutral here is WARM (red channel
+ * above blue); Tailwind's slates are cool. Surfaces are 100% opaque paper stock,
+ * never glass. Depth is the physical thickness of a card -- a zero-blur solid
+ * riser -- never a blurred glow. Color is flat spot ink drawn from Riso ink
+ * chemistry, never a gradient.
+ *
+ * Two colors are FILL-ONLY and must never sit under small text: --streak and
+ * --spark. Orange-on-white and yellow-on-white are the two most common contrast
+ * failures in gamified UI. Both carry an -ink variant for any text use.
+ *
+ * JS must never hardcode a color, duration or easing. Read them from here.
+ */
+
+:root {
+  /* ---------- paper: surfaces, all opaque ---------- */
+  --paper-deep: #efe7da;        /* app canvas, "the table" */
+  --paper: #fdfaf3;             /* card stock, raised */
+  --paper-sunk: #e7decf;        /* wells: inputs, progress tracks */
+  --paper-edge: #d8cdb9;        /* the cut edge under a riser */
+
+  /* ---------- ink: text ---------- */
+  --ink-1: #1a1714;             /* primary    17.12:1 on paper */
+  --ink-2: #423b33;             /* secondary  10.57:1 */
+  --ink-3: #6e645a;             /* meta        5.54:1 */
+  --ink-4: #a89c8e;             /* disabled only -- WCAG exempt */
+
+  /* ---------- rules & edges ---------- */
+  --edge: #e3d9c7;              /* decorative hairline */
+  --edge-strong: #948a7c;       /* interactive border -- 3.26:1, meets SC 1.4.11 */
+  --edge-ink: rgba(26, 23, 20, 0.2);
+
+  /* ---------- brand: printer's blue ---------- */
+  --brand: #0b6fb4;             /* paper label on it: 5.10:1 */
+  --brand-shade: #075287;
+  --brand-ink: #08507f;         /* 7.01:1 on brand-wash */
+  --brand-wash: #dcebf7;
+
+  /* ---------- semantic ---------- */
+  --go: #0e7a43;                /* correct -- paper on it 5.19:1 */
+  --go-shade: #0a5730;
+  --go-ink: #0a5730;
+  --go-wash: #ddf0e2;
+  --go-pop: #1fb562;            /* fills and particles only */
+
+  --stop: #c8392f;              /* incorrect -- paper on it 4.93:1 */
+  --stop-shade: #96261e;
+  --stop-ink: #96261e;
+  --stop-wash: #fbe3df;
+
+  --review: #6b4fa8;            /* needs-review / spaced repetition */
+  --review-shade: #4b3379;
+  --review-ink: #4b3379;
+  --review-wash: #eae3f7;
+
+  --locked: #9a8f81;
+  --locked-surface: #e6ded2;
+  --locked-ink: #5f564c;
+
+  --streak: #ff6c2f;            /* FILL ONLY */
+  --streak-deep: #d2521a;
+  --streak-ink: #9e3a0e;        /* use this for text */
+  --streak-wash: #fbe6d6;
+
+  --xp: #d81e77;
+  --xp-shade: #a0104f;
+  --xp-pop: #ff48b0;            /* particles only */
+  --xp-wash: #fce0ee;
+
+  --spark: #f2b705;             /* FILL ONLY */
+  --spark-ink: #7a5200;         /* use this for text */
+  --spark-wash: #fdf1ce;
+
+  --focus: #1b7fd0;
+  --on-fill: var(--paper);      /* label color on a bright fill */
+
+  /* ---------- per-skill ink rotation (concept.order % 6) ---------- */
+  --cat-0: var(--brand);
+  --cat-1: var(--go-pop);
+  --cat-2: var(--xp);
+  --cat-3: var(--spark);
+  --cat-4: var(--review);
+  --cat-5: var(--streak-deep);
+
+  /* ---------- type ---------- */
+  --font-display: 'Bricolage Grotesque Variable', 'Archivo', 'Helvetica Neue', system-ui, sans-serif;
+  --font-read: 'Source Serif 4 Variable', 'Iowan Old Style', Georgia, serif;
+
+  --t-micro: 11px;    /* eyebrows, chip caps -- uppercase only at this size */
+  --t-tiny: 13px;
+  --t-sm: 15px;
+  --t-base: 17px;
+  --t-read: 19px;     /* lesson prose, serif */
+  --t-read-lg: 21px;  /* question prompt, serif */
+  --t-lg: 22px;
+  --t-h3: 26px;
+  --t-h2: 33px;
+  --t-h1: 42px;
+  --t-display: 56px;
+  --t-hero: 72px;
+
+  /* ---------- spacing: honest 4px grid ---------- */
+  --s-1: 2px;
+  --s-2: 4px;
+  --s-3: 8px;
+  --s-4: 12px;
+  --s-5: 16px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 48px;
+  --s-9: 64px;
+  --s-10: 96px;
+
+  /* ---------- radii: every value off the Tailwind scale ----------
+     Tailwind ships 4/6/8/12/16/24. We ship 7/11/14/20/28. Nothing is ever
+     16px-rounded. This is a grep-able check. */
+  --r-xs: 7px;
+  --r-sm: 11px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 9999px;
+
+  /* ---------- elevation ---------- */
+  --riser: 4px;
+  --contact: 0 10px 20px -12px rgba(62, 46, 28, 0.18);
+  --contact-strong: 0 12px 24px -10px rgba(62, 46, 28, 0.24);
+
+  /* ---------- easing ----------
+     --e-pop and --e-spring are REWARD-ONLY. An overshoot on a nav transition
+     is a bug, not a flourish. */
+  --e-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --e-snap: cubic-bezier(0.2, 0, 0, 1);
+  --e-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --e-squash: cubic-bezier(0.5, 0, 0.75, 0);
+  --e-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ---------- duration ladder ---------- */
+  --d-1: 90ms;
+  --d-2: 160ms;
+  --d-3: 240ms;
+  --d-4: 340ms;
+  --d-5: 520ms;
+  --d-6: 900ms;
+  --d-7: 1400ms;
+
+  /* The gap between consecutive items in a staggered entrance. Its own token
+     because it is multiplied by an index rather than used as a duration, and
+     because reduced motion collapses it to zero -- a stagger IS the motion in
+     a list entrance, so removing it is the degradation. */
+  --stagger: 45ms;
+
+  /* ---------- shared keyframe names ----------
+   *
+   * These are tokens for a reason that is not style consistency.
+   *
+   * CSS Modules scopes @keyframes AND every identifier it finds in an
+   * animation-name position. A *.module.css that writes `animation: fadeUp 1s`
+   * compiles to `animation: _fadeUp_a1b2c3 1s`, which resolves to a keyframe
+   * that exists only if that same module defined it. The shared keyframes live
+   * in the global keyframes.css, so every module referencing one by its bare
+   * name was pointing at nothing.
+   *
+   * It fails silently in every direction: the build passes, the stylesheet
+   * reads correctly, and getComputedStyle happily reports the animation as set.
+   * Only getAnimations() shows the element has none. It had disabled Pica's
+   * breathing, the streak embers, the wrong-answer shake, the feedback footer
+   * slide-up and every screen entrance in the app since Phase 1 -- all of it
+   * invisible in review, because the CSS was right.
+   *
+   * A var() reference is not an identifier, so the scoper leaves it alone.
+   * Modules write `animation: var(--kf-fade-up) var(--d-3) var(--e-settle)`.
+   */
+  --kf-fade-up: fadeUp;
+  --kf-fade-in: fadeIn;
+  --kf-fade-out: fadeOut;
+  --kf-shake: shake;
+  --kf-breathe: breathe;
+  --kf-ember-rise: emberRise;
+  --kf-slide-up-in: slideUpIn;
+  --kf-slide-down-out: slideDownOut;
+  --kf-route-in: routeIn;
+  --kf-word-in: wordIn;
+
+  /* ---------- layout ---------- */
+  --rail-w: 220px;
+  --rail-w-collapsed: 68px;
+  --topbar-h: 68px;
+  --content-max: 1180px;
+  --prose-max: 66ch;
+
+  /* ---------- z ---------- */
+  --z-rail: 20;
+  --z-topbar: 30;
+  --z-drawer: 40;
+  --z-sheet: 50;
+  --z-particles: 60;
+  --z-toast: 70;
+  --z-grain: 9999;
+}
+
+/*
+ * Dark mode is WARM BLACK, not slate -- zero blue anywhere.
+ * Buttons keep their bright face and switch to a dark ink label rather than
+ * desaturating; a desaturated dark mode is the slop tell, and a bright ink chip
+ * on warm black reads as a lit sign, which keeps the game energy.
+ */
+:root[data-theme='dark'] {
+  --paper-deep: #100e0b;
+  --paper: #231f1a;
+  --paper-sunk: #0b0907;
+  --paper-edge: #342e27;
+
+  --ink-1: #f3ede2;
+  --ink-2: #c6bcae;
+  --ink-3: #9a907f;
+  --ink-4: #6a6155;
+
+  --edge: #3a342c;
+  --edge-strong: #776d5f;
+  --edge-ink: rgba(0, 0, 0, 0.55);
+  --hilite: rgba(255, 248, 235, 0.07);
+
+  --brand: #5ab0ec;
+  --brand-shade: #2e7fb5;
+  --brand-wash: #16283a;
+  --brand-ink: #5ab0ec;
+
+  --go: #45ce86;
+  --go-shade: #219558;
+  --go-wash: #122b1f;
+  --go-ink: #45ce86;
+  --go-pop: #5ce79c;
+
+  --stop: #ff8577;
+  --stop-shade: #c4544b;
+  --stop-wash: #301716;
+  --stop-ink: #ff8577;
+
+  --review: #b79bee;
+  --review-shade: #7e63b4;
+  --review-wash: #221a33;
+  --review-ink: #b79bee;
+
+  --locked: #5a5248;
+  --locked-surface: #2b2620;
+  --locked-ink: #9a907f;
+
+  --streak: #ff9455;
+  --streak-deep: #d2521a;
+  --streak-wash: #2e1b10;
+  --streak-ink: #ff9455;
+
+  --xp: #ff77bc;
+  --xp-shade: #c24c8c;
+  --xp-wash: #33162a;
+  --xp-pop: #ff9fd2;
+
+  --spark: #f0c34a;
+  --spark-ink: #f0c34a;
+  --spark-wash: #2b2210;
+
+  --focus: #8fd0ff;
+
+  /* Labels on bright fills measure 7.67:1 - 10.28:1 across all six inks. */
+  --on-fill: #14120f;
+
+  --contact: 0 10px 20px -12px rgba(0, 0, 0, 0.5);
+  --contact-strong: 0 12px 24px -10px rgba(0, 0, 0, 0.6);
+}
+
+/*
+ * ---------- reduced motion, step 1 of 2: the duration ladder ----------
+ *
+ * Reduced motion is a DEGRADATION TABLE, not a kill switch, and this block is
+ * most of the table. Because nothing in the app hardcodes a duration -- CSS
+ * reads these tokens and lib/motion.ts parses them for GSAP -- collapsing the
+ * ladder here shortens every entrance, every route change and every timeline
+ * in one edit, with no component needing to know.
+ *
+ * 120ms is the target from the plan: long enough to read as a change of state
+ * rather than a jump cut, short enough that nothing travels far enough to
+ * trigger vestibular discomfort.
+ *
+ * --d-1 and --d-2 are deliberately NOT collapsed. They drive direct
+ * manipulation -- the button press, the option-select tick -- which is feedback
+ * about something the user is doing with their own hand, not motion happening
+ * at them. Removing it makes controls feel broken. Press.module.css halves the
+ * travel instead, which is the right lever.
+ *
+ * The overshoot easings resolve to the settle curve: an entrance that
+ * overshoots is precisely the motion someone with reduced motion enabled is
+ * asking not to see, and --e-pop is used in enough places that hunting them
+ * down individually would be a losing game.
+ */
+:root[data-motion='reduced'] {
+  --d-3: 120ms;
+  --d-4: 120ms;
+  --d-5: 120ms;
+  --d-6: 120ms;
+  --d-7: 120ms;
+  --e-pop: cubic-bezier(0.22, 1, 0.36, 1);
+  --e-squash: cubic-bezier(0.22, 1, 0.36, 1);
+  --stagger: 0ms;
+}

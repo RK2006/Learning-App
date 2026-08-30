@@ -1,0 +1,104 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul[class],
+ol[class] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+svg {
+  fill: currentColor;
+}
+
+a {
+  color: var(--brand-ink);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+/*
+ * The stylesheet this replaces had ZERO focus styles. Every interactive element
+ * gets a visible ring.
+ *
+ * `outline: none` is banned unless the same selector defines a replacement --
+ * see .press:focus-visible in Press.module.css, which needs a paper/focus
+ * sandwich because a blue ring on a blue button is 1.27:1 (invisible).
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--r-xs);
+}
+
+:where(input, textarea, select) {
+  background: var(--paper-sunk);
+  border: 2px solid var(--edge-strong);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  padding: var(--s-4) var(--s-5);
+  min-height: 48px;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: var(--font-read);
+  font-size: var(--t-base);
+  line-height: 1.55;
+}
+
+::placeholder {
+  color: var(--ink-4);
+}
+
+::selection {
+  background: var(--spark-wash);
+  color: var(--ink-1);
+}

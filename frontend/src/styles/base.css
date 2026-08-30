@@ -1,0 +1,202 @@
+html {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--paper-deep);
+  color: var(--ink-1);
+  font-family: var(--font-display);
+  font-size: var(--t-base);
+  font-weight: 500;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- type scale ----------
+   Hand-tuned ~1.26 ratio, deliberately off any framework's default steps.
+   Uppercase only at --t-micro. Two display weights never share a block. */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--t-h1);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.024em;
+  font-variation-settings: 'opsz' 42;
+}
+
+h2 {
+  font-size: var(--t-h2);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.018em;
+  font-variation-settings: 'opsz' 33;
+}
+
+h3 {
+  font-size: var(--t-h3);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.012em;
+  font-variation-settings: 'opsz' 26;
+}
+
+/* Lesson prose is a SERIF. This is the strongest "a human designed this" signal
+   in the build, and it genuinely reads better at 19px. */
+.prose {
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  font-weight: 400;
+  line-height: 1.62;
+  letter-spacing: 0.003em;
+  max-width: var(--prose-max);
+  text-wrap: pretty;
+}
+
+.eyebrow {
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-variation-settings: 'opsz' 12;
+}
+
+.meta {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+}
+
+/* Odometers and counters. tnum coverage in a variable grotesque is not
+   guaranteed, so the min-width per digit cell stops a reflowing counter from
+   looking broken mid-animation. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.u-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.u-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-row {
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- paper grain ----------
+   A fixed 3.5% turbulence layer over the whole page. Together with the
+   per-screen misregistration, this is what sells "physical object" -- and it is
+   the detail a generator never produces. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-grain);
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='dark'] body::after {
+  mix-blend-mode: screen;
+  opacity: 0.05;
+}
+
+/*
+ * ---------- reduced motion, step 2 of 2: the safety net ----------
+ *
+ * The table itself is the collapsed duration ladder in tokens.css; this block
+ * is only what tokens cannot express.
+ *
+ * What was here before was a blanket
+ *   *, *::before, *::after { animation-duration: .001ms !important;
+ *                            transition-duration: .001ms !important }
+ * which is the reflex implementation and is wrong in both directions. It is too
+ * strong -- it zeroes the button press, which is direct-manipulation feedback
+ * rather than decoration, so controls stop acknowledging a click and read as
+ * broken; `!important` on `*` also beats every component's own considered
+ * degradation, so Press.module.css's careful 4px -> 2px travel had no
+ * transition left to travel over. And it is too weak, because a `!important`
+ * CSS declaration has no effect whatsoever on a GSAP timeline writing inline
+ * transforms, so the rule looks comprehensive while the largest animations in
+ * the app sail straight through it.
+ *
+ * What remains here is the one thing tokens cannot do: stop loops. CSS cannot
+ * select "an animation that repeats forever", but it can truncate one, and an
+ * infinite animation is by definition either decoration or an idle state --
+ * both of which go. Entrances, which run once, are untouched and degrade to
+ * 120ms via the token ladder.
+ *
+ * Components whose loops have a meaningful resting pose (StreakFlame, Pica)
+ * still declare `animation: none` themselves, so they settle deliberately
+ * rather than wherever iteration one happens to end.
+ *
+ * Imperative motion obeys none of this. GSAP and canvas-confetti consult
+ * shouldAnimate() in lib/motion.ts, which reads the same [data-motion]
+ * attribute these selectors do.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+:root[data-motion='reduced'] {
+  scroll-behavior: auto;
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-iteration-count: 1 !important;
+}
+
+/*
+ * ---------- confetti surface ----------
+ * Created imperatively by lib/celebrate.ts, so it cannot live in a CSS module.
+ * The z-index is the token rather than canvas-confetti's own `zIndex` option,
+ * which only applies to the canvas the library makes for itself.
+ */
+.confettiCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: var(--z-particles);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --edge: var(--ink-3);
+    --edge-strong: var(--ink-2);
+  }
+}

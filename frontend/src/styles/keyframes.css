@@ -1,0 +1,141 @@
+/*
+ * Shared keyframes. Component-specific ones live in their own module.
+ *
+ * A *.module.css can NEVER reference these by bare name -- CSS Modules scopes
+ * every identifier in an animation-name position, so it would compile to a name
+ * that does not exist. Use the --kf-* tokens in tokens.css.
+ *
+ * Everything here is referenced by at least one module. Five more keyframes
+ * lived here through Phase 7 -- pop, popIn, inkFill, beacon, drawIn -- and none
+ * of them was ever used: drawIn was for the serpentine connector that Phase 5's
+ * redesign removed, and inkFill was for skeletons the loading design never
+ * needed, having settled on the narrative press loader instead. They are gone
+ * rather than kept "in case", which is how a stylesheet ends up with a third
+ * of its rules dead and unverifiable.
+ */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Shakes the ELEMENT that was wrong, never the card or the page. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes emberRise {
+  0% {
+    opacity: 0.9;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.4);
+  }
+}
+
+@keyframes slideUpIn {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Exits are "sucked in" rather than faded out -- paired with --e-squash. */
+@keyframes slideDownOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(12px) scale(0.985);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+ * Route entrance. 8px, not 24px: a screen change is already a large visual
+ * event, and a long travel on top of it reads as the app being slow.
+ */
+@keyframes routeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Text reveal.
+ *
+ * Applied to word GROUPS that are already in the DOM -- never typed into it.
+ * Typing text in character by character means the full sentence does not exist
+ * for a screen reader, for find-in-page, or for anyone trying to select it, and
+ * it makes reading speed a function of an animation constant.
+ */
+@keyframes wordIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
