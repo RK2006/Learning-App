@@ -1,0 +1,278 @@
+/*
+ * PICA -- a moth.
+ *
+ * Not an owl, not a fox, not a blob. A "pica" is a printer's unit (12 points),
+ * so the name belongs to the Pressroom world; a moth drawn to light is an
+ * honest metaphor for a learner; and nobody's default mascot is a moth.
+ *
+ * Every fill is flat -- zero gradients. The back wing carries a second ink
+ * plate offset by 2px under `multiply`, which is the misregistration signature.
+ *
+ * Wings use transform-box: fill-box with an explicit origin so scaleX hinges at
+ * the body rather than at the viewBox corner.
+ */
+
+.root {
+  display: block;
+  overflow: visible;
+}
+
+.wing,
+.antenna,
+.body,
+.eyes {
+  transform-box: fill-box;
+}
+
+.body {
+  transform-origin: 50% 80%;
+}
+
+.wingBackL,
+.wingFrontL {
+  transform-origin: 100% 50%;
+}
+
+.wingBackR,
+.wingFrontR {
+  transform-origin: 0% 50%;
+}
+
+/* The off-plate duplicate. Deliberately misaligned. */
+.misreg {
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+  transform: translate(2px, 1.5px);
+}
+
+:global(:root[data-theme='dark']) .misreg {
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+.eyes {
+  transform-origin: 50% 50%;
+  transition: transform 130ms var(--e-snap);
+}
+
+.pupils {
+  transition: transform 280ms var(--e-settle);
+  transform: translate(var(--pupil-x, 0px), var(--pupil-y, 0px));
+}
+
+.mouth {
+  fill: none;
+  stroke: var(--ink-1);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: d 200ms var(--e-settle);
+}
+
+/* ---------- idle ----------
+   One of only TWO things in the entire app permitted to loop on idle (the
+   other is the streak flame), because both represent live state. The wings run
+   at a different period from the body so the motion never locks into a
+   mechanical rhythm. */
+.idle .body {
+  animation: var(--kf-breathe) 2600ms var(--e-inout) infinite;
+}
+
+.idle .wingBackL,
+.idle .wingBackR {
+  animation: flap 900ms var(--e-inout) infinite alternate;
+}
+
+.idle .wingFrontL,
+.idle .wingFrontR {
+  animation: flap 900ms var(--e-inout) infinite alternate;
+  animation-delay: 120ms;
+}
+
+@keyframes flap {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0.86);
+  }
+}
+
+/* Blink is driven by JS at a RANDOM 3.5-7s interval. A fixed interval reads
+   robotic -- the randomness is the whole point. */
+.blinking .eyes {
+  transform: scaleY(0.06);
+}
+
+/* ---------- think ---------- */
+.think .antennaL {
+  animation: twitch 900ms var(--e-inout) infinite alternate;
+}
+
+.think .wingFrontL {
+  animation: scratch 700ms var(--e-inout) infinite alternate;
+}
+
+@keyframes twitch {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-8deg);
+  }
+}
+
+@keyframes scratch {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-18deg);
+  }
+}
+
+/* ---------- cheer ---------- */
+.cheer .body {
+  animation: hop 690ms var(--e-pop) 1;
+}
+
+.cheer .wingBackL,
+.cheer .wingBackR,
+.cheer .wingFrontL,
+.cheer .wingFrontR {
+  animation: flap 220ms var(--e-inout) 3 alternate;
+}
+
+@keyframes hop {
+  0% {
+    transform: scale(1, 1);
+  }
+  13% {
+    transform: scale(1.06, 0.9);
+  }
+  45% {
+    transform: translateY(-26px) scale(0.94, 1.1);
+  }
+  62% {
+    transform: translateY(0) scale(1.1, 0.92);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+/* ---------- oof ----------
+   No tears, no red, no shame coding. Antennae droop, one wing covers an eye.
+   Getting something wrong is information, not a moral failure. */
+.oof .antennaL,
+.oof .antennaR {
+  transform: rotate(24deg);
+  transition: transform 320ms var(--e-settle);
+}
+
+.oof .body {
+  transform: translateY(4px) scaleY(0.94);
+  transition: transform 320ms var(--e-settle);
+}
+
+.oof .wingFrontL {
+  transform: rotate(-40deg) translate(-6px, -8px);
+  transition: transform 260ms var(--e-settle);
+}
+
+/* ---------- sleep ---------- */
+.sleep .wingBackL,
+.sleep .wingBackR,
+.sleep .wingFrontL,
+.sleep .wingFrontR {
+  transform: scaleX(0.5);
+}
+
+.sleep .body {
+  animation: var(--kf-breathe) 3800ms var(--e-inout) infinite;
+}
+
+/* ---------- carry ----------
+   Braced under a load: leaning into it, wings swept back for balance. A held
+   pose with no loop -- something being carried should look heavy, and a bob
+   would make it look like a balloon. */
+.carry .body {
+  transform: translateY(3px) rotate(-7deg);
+}
+
+.carry .wingBackL,
+.carry .wingFrontL {
+  transform: scaleX(0.82) rotate(9deg);
+}
+
+.carry .wingBackR,
+.carry .wingFrontR {
+  transform: scaleX(0.82) rotate(-4deg);
+}
+
+/* ---------- point ----------
+   Directs attention at whatever sits to Pica's right. Two nudges, then still:
+   a pointer that keeps waving is a distraction sitting next to the thing it
+   wants you to look at. */
+.point .antennaR {
+  animation: nudge 520ms var(--e-pop) 2;
+}
+
+.point .body {
+  transform: rotate(6deg);
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-16deg) translateX(3px);
+  }
+}
+
+/* ---------- peek ----------
+   Tucked and low, for use behind a clipping edge -- the caller decides how much
+   is hidden. Wings fold in so the silhouette stays legible at the crop. */
+.peek .body {
+  transform: translateY(10px);
+}
+
+.peek .wingBackL,
+.peek .wingFrontL {
+  transform: scaleX(0.42);
+}
+
+.peek .wingBackR,
+.peek .wingFrontR {
+  transform: scaleX(0.42);
+}
+
+/*
+ * ---------- reduced motion ----------
+ *
+ * Pica's idle loops are one half of the app's "exactly two things move" budget,
+ * and they are the first thing to go. The loops are killed HERE, with an
+ * explicit resting pose, rather than left to the global safety net in base.css
+ * -- that net truncates an animation after one iteration, and `flap` alternates,
+ * so a truncated wing would settle at scaleX(0.86): mid-beat, permanently.
+ * A moth frozen halfway through a wingbeat looks broken rather than still.
+ *
+ * The one-shot reactions are kept. Cheer and oof are answers to something the
+ * user just did, they run once, and they are the only thing on screen that
+ * distinguishes right from wrong for anyone who is not reading the label.
+ */
+:global(:root[data-motion='reduced']) .idle .body,
+:global(:root[data-motion='reduced']) .sleep .body,
+:global(:root[data-motion='reduced']) .idle .wingBackL,
+:global(:root[data-motion='reduced']) .idle .wingBackR,
+:global(:root[data-motion='reduced']) .idle .wingFrontL,
+:global(:root[data-motion='reduced']) .idle .wingFrontR,
+:global(:root[data-motion='reduced']) .think .antennaL,
+:global(:root[data-motion='reduced']) .think .wingFrontL {
+  animation: none;
+  transform: none;
+}
+
+/* At small sizes the pupils and mouth are dropped -- micro-detail below 32px is
+   visual noise, not charm. Handled by the `sm` size prop in Pica.tsx. */
