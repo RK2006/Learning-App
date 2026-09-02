@@ -1,0 +1,28 @@
+/*
+ * Word-group reveal.
+ *
+ * `display: inline` everywhere: the groups must wrap like the words they
+ * contain, so the paragraph still breaks where the typographer's `text-wrap:
+ * pretty` wants it to rather than at group boundaries.
+ */
+.reveal {
+  display: inline;
+}
+
+.group {
+  display: inline;
+  animation: var(--kf-word-in) var(--d-3) var(--e-settle) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+/*
+ * Reduced motion: no travel, only the fade, and it all arrives at once.
+ *
+ * The stagger is the part that makes this motion rather than a transition, and
+ * it disappears on its own -- --stagger resolves to 0ms, so every group shares
+ * a delay. Only the travel needs removing here. `both` is kept so the end state
+ * still lands if the animation is cut short.
+ */
+:global(:root[data-motion='reduced']) .group {
+  animation-name: var(--kf-fade-in);
+}

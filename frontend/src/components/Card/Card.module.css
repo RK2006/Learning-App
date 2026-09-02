@@ -1,0 +1,66 @@
+/*
+ * Depth without glassmorphism: a 2px solid riser in the paper's own cut-edge
+ * color, a hairline, and a WARM contact shadow (never blue-black, never over
+ * 20px blur, never over 0.24 alpha).
+ *
+ * Cards do NOT lift on hover. Only option tiles and path nodes do, and only by
+ * 2px -- hover-lifting cards is one of the loudest AI-generated tells.
+ */
+
+.card {
+  background: var(--paper);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  box-shadow:
+    0 2px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    var(--contact);
+}
+
+/* Contact shadows are invisible on warm black, so dark mode switches to a lit
+   top edge instead. Risers survive both themes because they are opaque color. */
+:global(:root[data-theme='dark']) .card {
+  box-shadow:
+    0 2px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    inset 0 1px 0 0 var(--hilite);
+}
+
+.sunk {
+  background: var(--paper-sunk);
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+}
+
+.flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+/*
+ * A flush card's CONTENT bleeds to the edge; its title must not. Without this
+ * the heading sat hard against the card's own border, reading as an overlap
+ * rather than a header. Padding the head only -- not the card -- keeps the
+ * table or list underneath edge-to-edge, which is the whole point of `flush`.
+ */
+.flush > .head {
+  padding: var(--s-6) var(--s-6) 0;
+  margin-bottom: var(--s-4);
+}
+
+.tight {
+  padding: var(--s-5);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-5);
+  margin-bottom: var(--s-5);
+}
+
+.title {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: -0.008em;
+}

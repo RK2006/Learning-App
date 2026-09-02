@@ -1,0 +1,187 @@
+/*
+ * The pressable mechanic.
+ *
+ * The riser is a box-shadow, NEVER a border-bottom: a border changes the layout
+ * box, so pressing would shift every sibling and break vertical rhythm.
+ *
+ * Down 40ms / up 90ms -- asymmetric on purpose. Instant commitment, relaxed
+ * release. That asymmetry is most of what makes it feel physical.
+ *
+ * There is deliberately NO overshoot here. The bounce belongs to the reward
+ * (the checkmark, the counter, the mascot), not to the control. A springy
+ * button feels cheap; a springy reward feels earned.
+ */
+
+.press {
+  --face: var(--brand);
+  --shade: var(--brand-shade);
+  --travel: var(--riser);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: var(--r-md);
+  background: var(--face);
+  color: var(--on-fill);
+  font-family: var(--font-display);
+  font-size: var(--t-base);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-align: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+
+  box-shadow:
+    0 var(--travel) 0 0 var(--shade),
+    0 calc(var(--travel) + 1px) 0 0 var(--edge-ink),
+    0 calc(var(--travel) + 3px) 10px -4px rgba(62, 46, 28, 0.22);
+
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--d-1) var(--e-snap),
+    box-shadow var(--d-1) var(--e-snap),
+    filter var(--d-2) linear,
+    background var(--d-2) linear;
+}
+
+/* Hover must NOT pre-press -- that spends the payoff before the click. */
+.press:hover:not(:disabled) {
+  filter: brightness(1.06) saturate(1.03);
+}
+
+.press:active:not(:disabled) {
+  transform: translate3d(0, var(--travel), 0);
+  box-shadow:
+    0 0 0 0 var(--shade),
+    0 1px 0 0 var(--edge-ink),
+    0 1px 2px 0 rgba(62, 46, 28, 0.18);
+  transition-duration: 40ms;
+  filter: brightness(0.98);
+}
+
+/*
+ * A blue focus ring on a blue button is 1.27:1 -- invisible. The sandwich puts
+ * a paper ring between face and focus ring, so BOTH boundaries clear 3:1
+ * (SC 1.4.11 and 2.4.11). The riser has to be restated because box-shadow is
+ * a single property.
+ */
+.press:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--focus),
+    0 var(--travel) 0 0 var(--shade),
+    0 calc(var(--travel) + 1px) 0 0 var(--edge-ink);
+}
+
+.press:disabled {
+  --face: var(--locked-surface);
+  --shade: transparent;
+  --travel: 0px;
+  color: var(--locked-ink);
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* ---------- sizes ---------- */
+.sm {
+  --travel: 3px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: var(--t-sm);
+}
+
+.lg {
+  --travel: 6px;
+  min-height: 64px;
+  padding: 0 30px;
+  font-size: var(--t-lg);
+}
+
+/* ---------- variants: swap only --face and --shade ---------- */
+.go {
+  --face: var(--go);
+  --shade: var(--go-shade);
+}
+
+.stop {
+  --face: var(--stop);
+  --shade: var(--stop-shade);
+}
+
+.review {
+  --face: var(--review);
+  --shade: var(--review-shade);
+}
+
+.xp {
+  --face: var(--xp);
+  --shade: var(--xp-shade);
+}
+
+.ghost {
+  --face: var(--paper);
+  --shade: var(--paper-edge);
+  color: var(--ink-1);
+  box-shadow:
+    0 var(--travel) 0 0 var(--shade),
+    inset 0 0 0 2px var(--edge-strong),
+    0 7px 10px -4px rgba(62, 46, 28, 0.16);
+}
+
+.ghost:active:not(:disabled) {
+  box-shadow:
+    0 0 0 0 var(--shade),
+    inset 0 0 0 2px var(--edge-strong),
+    0 1px 2px 0 rgba(62, 46, 28, 0.18);
+}
+
+.ghost:focus-visible {
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--focus),
+    0 var(--travel) 0 0 var(--shade),
+    inset 0 0 0 2px var(--edge-strong);
+}
+
+/* Destructive reads as outlined-danger, never as a filled primary -- an
+   irreversible action must not wear the same clothes as "Continue". */
+.danger {
+  --face: var(--paper);
+  --shade: var(--paper-edge);
+  color: var(--stop-ink);
+  box-shadow:
+    0 var(--travel) 0 0 var(--shade),
+    inset 0 0 0 2px var(--stop),
+    0 7px 10px -4px rgba(62, 46, 28, 0.16);
+}
+
+.danger:active:not(:disabled) {
+  box-shadow:
+    0 0 0 0 var(--shade),
+    inset 0 0 0 2px var(--stop),
+    0 1px 2px 0 rgba(62, 46, 28, 0.18);
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+/* Reduced motion keeps the press -- it is feedback, not decoration -- but
+   halves the travel. See base.css for the rationale. */
+@media (prefers-reduced-motion: reduce) {
+  .press {
+    --travel: 2px;
+  }
+}
+
+:global(:root[data-motion='reduced']) .press {
+  --travel: 2px;
+}

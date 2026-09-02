@@ -1,0 +1,45 @@
+/*
+ * Progress ring.
+ *
+ * The fill is driven by a CSS custom property (--p, 0..1) with a transition on
+ * stroke-dashoffset, so the browser animates it off the main thread with no
+ * React involvement at all. Animating this from React state at 60fps is the
+ * number-one jank source in a UI like this.
+ */
+
+.ring {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.track {
+  fill: none;
+  stroke: var(--paper-sunk);
+}
+
+.value {
+  fill: none;
+  stroke: var(--tone, var(--brand));
+  stroke-linecap: round;
+  stroke-dasharray: var(--circumference);
+  stroke-dashoffset: calc(var(--circumference) * (1 - var(--p, 0)));
+  transition: stroke-dashoffset var(--d-6) var(--e-settle);
+}
+
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+}

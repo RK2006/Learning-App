@@ -1,0 +1,69 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px var(--s-4);
+  border-radius: var(--r-pill);
+  background: var(--paper-sunk);
+  color: var(--ink-2);
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+}
+
+/*
+ * Tones use the -wash background with the matching -ink foreground.
+ *
+ * streak and spark exist ONLY as wash+ink here. Their raw fills
+ * (--streak, --spark) are never allowed under small text: orange-on-white and
+ * yellow-on-white are the two most common contrast failures in gamified UI.
+ */
+.brand {
+  background: var(--brand-wash);
+  color: var(--brand-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+.go {
+  background: var(--go-wash);
+  color: var(--go-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--go) 28%, transparent);
+}
+
+.stop {
+  background: var(--stop-wash);
+  color: var(--stop-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--stop) 28%, transparent);
+}
+
+.review {
+  background: var(--review-wash);
+  color: var(--review-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--review) 28%, transparent);
+}
+
+.streak {
+  background: var(--streak-wash);
+  color: var(--streak-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--streak) 32%, transparent);
+}
+
+.spark {
+  background: var(--spark-wash);
+  color: var(--spark-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--spark) 38%, transparent);
+}
+
+.locked {
+  background: var(--locked-surface);
+  color: var(--locked-ink);
+}
+
+.caps {
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}

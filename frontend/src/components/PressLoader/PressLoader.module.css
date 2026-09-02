@@ -1,0 +1,141 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  text-align: center;
+}
+
+/*
+ * Pica gets its own column rather than being laid over the press.
+ *
+ * Overlapping the two drawings put the press's base bar straight through the
+ * moth's body, which read as broken clipping rather than as depth. A reserved
+ * gutter on the left places Pica AT the crank end, which is the thing the
+ * composition is trying to say.
+ */
+.scene {
+  position: relative;
+  width: min(340px, 82vw);
+  padding-left: 24%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.press {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.pica {
+  position: absolute;
+  left: 0;
+  bottom: 4%;
+  width: 27%;
+  height: auto;
+}
+
+/* The off-plate duplicate: the same shape, one ink, 2px out of register. */
+.plate {
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
+:global(:root[data-theme='dark']) .plate {
+  mix-blend-mode: screen;
+  opacity: 0.45;
+}
+
+/*
+ * The crank.
+ *
+ * A full turn, not a lever pull: a wheel that rotates all the way round reads
+ * as a machine running, where an arm that returns to where it started reads as
+ * a machine jammed. --e-inout gives it a heave -- slightly slower at the top
+ * and bottom of the stroke, the way a hand-turned press actually behaves.
+ *
+ * The translate lives inside the keyframes rather than on the element, because
+ * a CSS `transform` on the group would otherwise replace the positioning
+ * outright and the crank would animate around the SVG's top-left corner.
+ */
+.crank {
+  animation: crankTurn 1500ms var(--e-inout) infinite;
+}
+
+@keyframes crankTurn {
+  from {
+    transform: translate(20px, 58px) rotate(0deg);
+  }
+  to {
+    transform: translate(20px, 58px) rotate(360deg);
+  }
+}
+
+/*
+ * Sheets leaving the press, one at a time.
+ *
+ * Staggered by --i rather than by three separate rules, so adding a fourth
+ * sheet is a change in the JSX and nothing else.
+ */
+.sheet {
+  opacity: 0;
+  animation: sheetOut 2400ms var(--e-settle) infinite;
+  animation-delay: calc(var(--i) * 800ms);
+}
+
+@keyframes sheetOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-26px);
+  }
+  14% {
+    opacity: 1;
+    transform: translateX(-18px);
+  }
+  58% {
+    opacity: 1;
+    transform: translateX(12px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+.label {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--ink-1);
+}
+
+.note {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  max-width: 44ch;
+}
+
+/*
+ * Reduced motion: the press stops, the scene stays.
+ *
+ * Both loops need an explicit resting pose rather than the global truncation in
+ * base.css. A crank stopped after one iteration is back at 0deg, which is
+ * correct by luck; a sheet stopped after one iteration has run to its last
+ * keyframe, which is `opacity: 0` -- so the press would appear to have produced
+ * nothing at all. One sheet is parked mid-exit instead, which says the same
+ * thing the animation was saying.
+ */
+:global(:root[data-motion='reduced']) .crank {
+  animation: none;
+  transform: translate(20px, 58px) rotate(28deg);
+}
+
+:global(:root[data-motion='reduced']) .sheet {
+  animation: none;
+  opacity: 0;
+}
+
+:global(:root[data-motion='reduced']) .sheet:first-child {
+  opacity: 1;
+  transform: translateX(6px);
+}
