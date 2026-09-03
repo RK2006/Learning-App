@@ -1,0 +1,173 @@
+.rail {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-rail);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--s-6) var(--s-4);
+  background: var(--paper);
+  box-shadow: inset -1.5px 0 0 0 var(--edge);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0 var(--s-3) var(--s-5);
+  font-size: var(--t-lg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink-1);
+  text-decoration: none;
+  font-variation-settings: 'opsz' 22;
+}
+
+.brandMark {
+  flex: none;
+}
+
+.brandText {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  flex: 1;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: 48px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background var(--d-2) var(--e-snap),
+    color var(--d-2) var(--e-snap);
+}
+
+.item:hover {
+  background: var(--paper-sunk);
+  color: var(--ink-1);
+}
+
+/* Active state is a flat ink wash plus a solid left marker -- no gradient,
+   no glow. */
+.item[aria-current='page'] {
+  background: var(--brand-wash);
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.marker {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 24px;
+  border-radius: 0 var(--r-xs) var(--r-xs) 0;
+  background: var(--brand);
+}
+
+.itemWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  flex: none;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: var(--r-sm);
+  color: var(--ink-3);
+  align-self: flex-start;
+}
+
+.collapse:hover {
+  background: var(--paper-sunk);
+  color: var(--ink-1);
+}
+
+/* ---------- collapsed ---------- */
+.rail[data-collapsed='true'] .brandText,
+.rail[data-collapsed='true'] .label {
+  display: none;
+}
+
+.rail[data-collapsed='true'] .item {
+  justify-content: center;
+  padding: 0;
+}
+
+.rail[data-collapsed='true'] .brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ---------- mobile: bottom tab bar ---------- */
+@media (max-width: 900px) {
+  .rail {
+    position: fixed;
+    inset: auto 0 0 0;
+    flex-direction: row;
+    height: auto;
+    padding: var(--s-2) var(--s-3);
+    padding-bottom: max(var(--s-2), env(safe-area-inset-bottom));
+    box-shadow:
+      inset 0 1.5px 0 0 var(--edge),
+      0 -8px 20px -12px rgba(62, 46, 28, 0.3);
+  }
+
+  .brand,
+  .collapse {
+    display: none;
+  }
+
+  .nav {
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+  }
+
+  .item {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 56px;
+    padding: var(--s-2) var(--s-2);
+    font-size: var(--t-micro);
+    letter-spacing: 0.02em;
+  }
+
+  .label {
+    display: block;
+  }
+
+  .marker {
+    display: none;
+  }
+}
