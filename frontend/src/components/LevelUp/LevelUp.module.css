@@ -1,0 +1,105 @@
+/*
+ * The level-up takeover.
+ *
+ * Sits above the particle layer so the card reads as being in front of the
+ * confetti rather than buried under it -- the confetti is the background of
+ * this moment, not the subject.
+ */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-particles) + 1);
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+  /* Matches the session exit dialog. A scrim is the one surface in the build
+     allowed alpha, because its whole job is to show what it is covering. */
+  background: rgba(26, 23, 20, 0.44);
+  animation: var(--kf-fade-in) var(--d-2) var(--e-settle) both;
+}
+
+.scrim[data-presence='exiting'] {
+  animation: var(--kf-fade-out) var(--d-2) var(--e-squash) both;
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-7);
+  text-align: center;
+  background: var(--paper);
+  border-radius: var(--r-xl);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    var(--contact-strong);
+  /*
+   * The one place an overshoot is allowed on a container.
+   *
+   * --e-pop is reserved for rewards, and everywhere else in the app that means
+   * a detail inside the container -- a checkmark, a counter, a chit. Here the
+   * arrival of the card IS the reward, so it gets the spring. Under reduced
+   * motion the token resolves to the settle curve and this becomes a plain
+   * 120ms entrance.
+   */
+  animation: levelCard var(--d-4) var(--e-pop) both;
+}
+
+.scrim[data-presence='exiting'] .card {
+  animation: var(--kf-slide-down-out) var(--d-2) var(--e-squash) both;
+}
+
+@keyframes levelCard {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ringWrap {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: var(--s-2);
+}
+
+.level {
+  font-size: var(--t-h1);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--xp);
+  font-variation-settings: 'opsz' 42;
+}
+
+/* Pica leans out from behind the ring rather than sitting beside it, so the
+   two read as one object. */
+.pica {
+  position: absolute;
+  right: -34%;
+  bottom: -12%;
+}
+
+.heading {
+  font-size: var(--t-h2);
+  font-weight: 800;
+  letter-spacing: -0.018em;
+}
+
+.title {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--xp);
+}
+
+.sub {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  margin-bottom: var(--s-4);
+}

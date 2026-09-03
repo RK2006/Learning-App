@@ -1,0 +1,154 @@
+.stack {
+  position: fixed;
+  z-index: var(--z-toast);
+  left: var(--s-5);
+  right: var(--s-5);
+  bottom: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-items: center;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  max-width: 520px;
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink-1);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+  /* Opaque, 0-blur riser -- nothing in this build is translucent. */
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 2px var(--edge-strong),
+    var(--contact-strong);
+  animation: toast-in var(--d-3) var(--e-settle) both;
+}
+
+/* Tone is carried by a 4px left rule as well as the border, so it survives
+   both themes and does not rely on colour alone. */
+.toast[data-tone='stop'] {
+  border-left: 4px solid var(--stop);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 2px var(--stop),
+    var(--contact-strong);
+}
+
+.toast[data-tone='go'] {
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 2px var(--go),
+    var(--contact-strong);
+}
+
+.toast[data-tone='spark'] {
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 2px var(--spark),
+    var(--contact-strong);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: none;
+}
+
+.action {
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--brand-ink);
+  background: transparent;
+  border: 2px solid currentColor;
+  border-radius: var(--r-xs);
+  padding: 2px var(--s-3);
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--brand-wash);
+}
+
+.dismiss {
+  font: inherit;
+  font-size: var(--t-sm);
+  line-height: 1;
+  color: var(--ink-3);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-xs);
+  padding: var(--s-2);
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  color: var(--ink-1);
+  background: var(--paper-sunk);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * The exit. Higher specificity than `.toast` so it replaces the entrance rather
+ * than queueing behind it, which matters when a toast is dismissed before its
+ * own entrance has finished.
+ *
+ * `--e-squash` accelerates out of frame: an exit that eases the way an entrance
+ * does reads as hesitation, as though the app is not sure the user meant it.
+ * usePresence keeps the node alive for exactly this long, and falls back to a
+ * timer if the animation never runs.
+ */
+.toast[data-presence='exiting'] {
+  animation: toast-out var(--d-3) var(--e-squash) both;
+  pointer-events: none;
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.97);
+  }
+}
+
+/* Entrances degrade to a fade; the toast still has to arrive. */
+:global(:root[data-motion='reduced']) .toast {
+  animation-duration: var(--d-2);
+  animation-name: toast-fade;
+}
+
+@keyframes toast-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

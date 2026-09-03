@@ -1,0 +1,86 @@
+/*
+ * The streak flame.
+ *
+ * One of only TWO elements in the app permitted to loop on idle (the other is
+ * Pica breathing), because both represent live state rather than decoration.
+ *
+ * Three nested paths on DESYNCED durations -- 1300 / 1100 / 900ms. The desync
+ * is the entire trick: matched durations read as a pulsing logo, mismatched
+ * ones read as fire.
+ */
+
+.flame {
+  display: block;
+  overflow: visible;
+}
+
+.outer,
+.mid,
+.inner {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.outer {
+  animation: flick 1300ms var(--e-inout) infinite alternate;
+}
+
+.mid {
+  animation: flick 1100ms var(--e-inout) infinite alternate;
+}
+
+.inner {
+  animation: flick 900ms var(--e-inout) infinite alternate;
+}
+
+@keyframes flick {
+  from {
+    transform: scaleY(1) translateY(0);
+  }
+  to {
+    transform: scaleY(1.08) translateY(-2px);
+  }
+}
+
+.ember {
+  animation: var(--kf-ember-rise) 2400ms var(--e-squash) infinite;
+  transform-box: fill-box;
+}
+
+.ember2 {
+  animation-delay: 800ms;
+}
+
+/* Cold streak: no flicker, no embers, desaturated. A broken streak should look
+   different, not just count differently. */
+.cold .outer,
+.cold .mid,
+.cold .inner,
+.cold .ember {
+  animation: none;
+}
+
+.cold {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+/*
+ * Reduced motion: the flame stays, the fire stops.
+ *
+ * Killed explicitly rather than through the global safety net in base.css,
+ * because `flick` runs `alternate` and truncating it after one iteration would
+ * leave the paths parked at the `to` keyframe -- a flame stretched 8% taller
+ * than it was drawn, permanently, with the three layers at different heights.
+ * The embers are removed outright: they are particles, which is the one
+ * category that goes entirely rather than degrading.
+ */
+:global(:root[data-motion='reduced']) .outer,
+:global(:root[data-motion='reduced']) .mid,
+:global(:root[data-motion='reduced']) .inner {
+  animation: none;
+}
+
+:global(:root[data-motion='reduced']) .ember {
+  display: none;
+}

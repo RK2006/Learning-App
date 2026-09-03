@@ -1,0 +1,93 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+  background: rgba(26, 23, 20, 0.44);
+  animation: var(--kf-fade-in) var(--d-2) var(--e-settle) both;
+}
+
+.scrim[data-presence='exiting'] {
+  animation: var(--kf-fade-out) var(--d-2) var(--e-squash) both;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 440px;
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: var(--s-7);
+  background: var(--paper);
+  border-radius: var(--r-xl);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    var(--contact-strong);
+  animation: var(--kf-fade-up) var(--d-3) var(--e-settle) both;
+}
+
+.title {
+  font-size: var(--t-h3);
+  font-weight: 800;
+  margin-bottom: var(--s-5);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0 0 var(--s-5);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+}
+
+.row dt {
+  flex: none;
+  width: 72px;
+  display: flex;
+  gap: 4px;
+}
+
+.row dd {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/*
+ * A key cap, not a code span.
+ *
+ * Printed as a physical key -- a riser and an edge, the same vocabulary as the
+ * buttons -- so the list reads as "press this" rather than as sample code.
+ */
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
+  background: var(--paper-sunk);
+  box-shadow:
+    0 1.5px 0 0 var(--paper-edge),
+    inset 0 0 0 1.5px var(--edge-strong);
+  font-family: var(--font-display);
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--ink-1);
+  line-height: 1.5;
+}
+
+.note {
+  margin-bottom: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1.5px solid var(--edge);
+  font-size: var(--t-tiny);
+  line-height: 1.6;
+  color: var(--ink-3);
+}
