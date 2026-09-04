@@ -1,0 +1,210 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--s-7) var(--s-5) var(--s-9);
+  background: var(--paper-deep);
+}
+
+.inner {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.progress {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.tick {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--paper-sunk);
+  overflow: hidden;
+}
+
+.tick[data-done='true'] {
+  background: var(--brand);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--t-h2);
+  font-weight: 750;
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  font-variation-settings: 'opsz' 33;
+}
+
+.sub {
+  margin-top: var(--s-3);
+  color: var(--ink-3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--s-4);
+}
+
+/* Option tiles are one of only two things in the app allowed to lift on hover
+   (the other is a path node), and only by 2px. */
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+  min-height: 76px;
+  padding: var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink-1);
+  text-align: left;
+  font-weight: 700;
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--edge-strong);
+  transition:
+    transform var(--d-2) var(--e-snap),
+    box-shadow var(--d-2) var(--e-snap);
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 5px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--edge-strong);
+}
+
+.tile[aria-pressed='true'] {
+  background: var(--brand-wash);
+  color: var(--brand-ink);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--brand);
+}
+
+.tileNote {
+  font-size: var(--t-tiny);
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.tile[aria-pressed='true'] .tileNote {
+  color: var(--brand-ink);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.label {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Loading is narrative and honest -- a mascot at the press and a real label,
+   never a fake percentage crawling to 90%. */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-5);
+  padding: var(--s-9) 0;
+  text-align: center;
+}
+
+
+
+.error {
+  padding: var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--stop-wash);
+  color: var(--stop-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--stop) 30%, transparent);
+}
+
+/* ------------------------------------------------------------ restore --- */
+
+/*
+ * Quiet by design, and present on every first run.
+ *
+ * This is the only route a returning user with a backup can take -- the router
+ * pins them to onboarding until a course exists -- so it cannot be hidden
+ * behind a disclosure. It also must not compete with the actual first-run task,
+ * hence the rule above it and the smaller type.
+ */
+.restore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  margin-top: var(--s-7);
+  padding-top: var(--s-6);
+  border-top: 1.5px solid var(--edge);
+}
+
+.restoreText {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+}
+
+.restoreNote {
+  margin-top: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  background: var(--go-wash);
+  color: var(--go-ink);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.restoreNote[data-bad] {
+  background: var(--stop-wash);
+  color: var(--stop-ink);
+}
+
+.errorTitle {
+  display: block;
+  font-size: var(--t-base);
+  font-weight: 800;
+}
+
+.errorBody {
+  display: block;
+  margin: var(--s-2) 0 var(--s-3);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  white-space: pre-line;
+}

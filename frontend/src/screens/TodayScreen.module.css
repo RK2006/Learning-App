@@ -1,0 +1,181 @@
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--s-4);
+}
+
+.vital {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.vitalValue {
+  font-size: var(--t-lg);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.vitalOf {
+  color: var(--ink-3);
+  font-weight: 600;
+  font-size: var(--t-base);
+}
+
+.vitalLabel {
+  margin-top: 2px;
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+}
+
+.heroCopy {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroTitle {
+  margin-top: var(--s-2);
+  font-size: var(--t-h2);
+  font-weight: 750;
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  font-variation-settings: 'opsz' 33;
+  text-wrap: balance;
+}
+
+.heroNote {
+  margin-top: var(--s-4);
+  color: var(--ink-3);
+  max-width: 56ch;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+  flex-wrap: wrap;
+}
+
+.heroPica {
+  flex: none;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-5);
+}
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.queueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  text-align: left;
+  color: var(--ink-1);
+}
+
+button.queueRow:hover {
+  background: var(--paper-sunk);
+}
+
+.queueName {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+
+.muted {
+  color: var(--ink-3);
+  font-size: var(--t-tiny);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  text-align: center;
+  padding: var(--s-9) var(--s-6);
+}
+
+.emptyNote {
+  color: var(--ink-3);
+  margin-bottom: var(--s-3);
+}
+
+@media (max-width: 720px) {
+  .hero {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+}
+
+/* ------------------------------------------------------ streak repair --- */
+
+.repair {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+  border-color: var(--streak);
+}
+
+.repairTitle {
+  font-family: var(--font-display);
+  font-size: var(--t-lg);
+  margin: var(--s-1) 0 var(--s-2);
+  color: var(--ink-1);
+}
+
+.repairNote {
+  margin: 0;
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  max-width: 54ch;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------- forecast --- */
+
+.forecast {
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--review-wash);
+  color: var(--review-ink);
+  border-radius: var(--r-xs);
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  line-height: 1.45;
+}

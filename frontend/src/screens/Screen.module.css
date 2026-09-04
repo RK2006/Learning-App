@@ -1,0 +1,113 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  animation: var(--kf-fade-up) var(--d-4) var(--e-settle) both;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+}
+
+.titleWrap {
+  position: relative;
+  min-width: 0;
+}
+
+/*
+ * The heading is a programmatic focus target: AppShell moves focus here on
+ * navigation so keyboard users land in the content instead of being stranded on
+ * the rail link they just activated.
+ *
+ * Which makes the ring REQUIRED, not forbidden. This rule used to suppress
+ * `:focus` and `:focus-visible` together, on the reasoning that a heading is not
+ * an interactive control and should not paint a box. The effect was that the
+ * one mechanism telling a keyboard user where focus had gone announced it by
+ * showing nothing at all -- navigate, and focus silently teleports across the
+ * page. That is worse than the stray box it was avoiding.
+ *
+ * The split does the real work. `:focus` alone is the mouse case, and Chrome
+ * does not match `:focus-visible` for scripted focus when the last input was a
+ * pointer, so a clicking user still sees nothing. A keyboard user gets the ring.
+ * AppShell separately skips the focus move on first paint, which is what stops
+ * a freshly loaded tab from outlining its own title.
+ */
+.title {
+  position: relative;
+  display: inline-block;
+}
+
+.title:focus {
+  outline: none;
+}
+
+.title:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 6px;
+  border-radius: var(--r-xs);
+}
+
+/*
+ * The misregistration signature.
+ *
+ * A second ink plate printed 2px off-register under the heading rule. Exactly
+ * ONE per screen -- more than one reads as a mistake rather than a press.
+ * This is the detail a generator never produces.
+ */
+.swash {
+  display: block;
+  width: 72px;
+  height: 7px;
+  margin-top: var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  position: relative;
+}
+
+.swash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--xp);
+  mix-blend-mode: multiply;
+  transform: translate(2px, 1.5px);
+  opacity: 0.85;
+}
+
+:global(:root[data-theme='dark']) .swash::after {
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+.subtitle {
+  margin-top: var(--s-4);
+  color: var(--ink-3);
+  font-size: var(--t-base);
+  max-width: 62ch;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+/* ---------- Phase 1 placeholder ----------
+   Every screen below is a routed stub. They are deliberately honest about being
+   unbuilt rather than showing invented numbers -- the whole point of this
+   overhaul is that nothing on screen lies. */
+
+
+

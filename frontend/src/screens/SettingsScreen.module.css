@@ -1,0 +1,160 @@
+.row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-5) 0;
+  border-top: 1px solid var(--edge);
+}
+
+.row:first-of-type {
+  border-top: 0;
+  padding-top: var(--s-2);
+}
+
+.rowLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-1);
+  max-width: 42ch;
+}
+
+.hint {
+  font-weight: 400;
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+
+.rowControl {
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------ segmented --- */
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  padding: 3px;
+  background: var(--paper-sunk);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-sm);
+}
+
+.segment {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  color: var(--ink-3);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background var(--d-1) var(--e-snap), color var(--d-1) var(--e-snap);
+}
+
+.segment:hover {
+  color: var(--ink-1);
+}
+
+/* Selected state is a filled chip AND a weight change, never colour alone. */
+.segment[data-on='true'] {
+  background: var(--paper);
+  color: var(--ink-1);
+  font-weight: 700;
+  box-shadow: 0 1px 0 0 var(--edge-ink);
+}
+
+/* --------------------------------------------------------------- toggle --- */
+
+.toggle {
+  appearance: none;
+  width: 52px;
+  height: 30px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--edge-strong);
+  background: var(--paper-sunk);
+  cursor: pointer;
+  display: flex;
+  justify-content: flex-start;
+  transition: background var(--d-2) var(--e-snap), border-color var(--d-2) var(--e-snap);
+}
+
+.toggle[data-on='true'] {
+  background: var(--go);
+  border-color: var(--go-shade);
+  justify-content: flex-end;
+}
+
+.knob {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  box-shadow: 0 1px 0 0 var(--edge-ink);
+  transition: transform var(--d-2) var(--e-settle);
+}
+
+/* ----------------------------------------------------------------- demo --- */
+
+.demo {
+  border-color: var(--spark);
+  border-style: dashed;
+}
+
+.demoNote,
+.note {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  line-height: 1.5;
+  margin: 0 0 var(--s-3);
+  max-width: 62ch;
+}
+
+.note {
+  margin: var(--s-4) 0 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--spark-wash);
+  color: var(--spark-ink);
+  border-radius: var(--r-xs);
+  font-weight: 600;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  justify-content: flex-end;
+}
+
+.input {
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  width: 92px;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-xs);
+  border: 2px solid var(--edge-strong);
+  background: var(--paper-sunk);
+  color: var(--ink-1);
+}
+
+@media (max-width: 700px) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .buttons {
+    justify-content: flex-start;
+  }
+}
