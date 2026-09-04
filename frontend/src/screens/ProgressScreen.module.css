@@ -1,0 +1,433 @@
+/* --------------------------------------------------------- summary --- */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  font-weight: 800;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.statLabel {
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--s-5);
+  margin-top: var(--s-5);
+}
+
+/* ------------------------------------------------------- xp chart --- */
+
+.chart {
+  padding-top: var(--s-5);
+}
+
+.bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  height: 140px;
+  padding-bottom: 20px;
+}
+
+.barCol {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  background: var(--brand);
+  border-radius: var(--r-xs) var(--r-xs) 0 0;
+}
+
+/* A day that met the goal is a different ink AND fully saturated; a zero day
+   keeps a visible stub so the axis never looks broken. */
+.bar[data-met='true'] {
+  background: var(--go);
+}
+
+.bar[data-zero='true'] {
+  background: var(--paper-edge);
+}
+
+.barTick {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: var(--t-micro);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.goalLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px dashed var(--go-ink);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.goalLabel {
+  position: absolute;
+  right: 0;
+  top: -16px;
+  font-size: var(--t-micro);
+  font-weight: 700;
+  color: var(--go-ink);
+  background: var(--paper);
+  padding: 0 var(--s-2);
+}
+
+/* ------------------------------------------------------ sparkline --- */
+
+.spark {
+  width: 100%;
+  height: 76px;
+  overflow: visible;
+}
+
+.sparkLine {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparkRef {
+  stroke: var(--edge-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparkDot {
+  fill: var(--brand);
+}
+
+.sparkDot[data-low='true'] {
+  fill: var(--stop);
+}
+
+.chartNote {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------- mastery --- */
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.swatchStored,
+.swatchNow {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.swatchStored {
+  background: var(--brand-wash);
+}
+
+.swatchNow {
+  background: var(--brand);
+  margin-left: var(--s-4);
+}
+
+.masteryList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.masteryRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 64px;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-xs);
+  padding: var(--s-2);
+  cursor: pointer;
+}
+
+.masteryRow:hover {
+  background: var(--paper-sunk);
+}
+
+.mName {
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  color: var(--ink-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mTrack {
+  position: relative;
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--paper-sunk);
+  overflow: hidden;
+}
+
+.mStored,
+.mNow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--r-pill);
+}
+
+.mStored {
+  background: var(--brand-wash);
+}
+
+.mNow {
+  background: var(--brand);
+}
+
+.mNums {
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mGap {
+  color: var(--review-ink);
+  margin-left: var(--s-2);
+  font-weight: 600;
+}
+
+.forecast {
+  margin: var(--s-5) 0 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--review-wash);
+  color: var(--review-ink);
+  border-radius: var(--r-xs);
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* -------------------------------------------------- misconceptions --- */
+
+.miscList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.miscList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) 0;
+  border-top: 1px solid var(--edge);
+  flex-wrap: wrap;
+}
+
+.miscList li:first-child {
+  border-top: 0;
+}
+
+/* Resolved is struck AND dimmed AND chipped -- three signals, because this is
+   the row where "did I fix that?" is the only question being asked. */
+.miscList li[data-resolved='true'] .miscText {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+
+.miscText {
+  font-size: var(--t-sm);
+  color: var(--ink-1);
+  flex: 1;
+  min-width: 220px;
+  line-height: 1.45;
+}
+
+.miscMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+
+.miscLink {
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  color: var(--brand-ink);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ----------------------------------------------------------- table --- */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-tiny);
+}
+
+.table th {
+  text-align: left;
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  padding: var(--s-4) var(--s-4);
+  border-bottom: 2px solid var(--edge);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--edge);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table td[data-low='true'] {
+  color: var(--stop-ink);
+  font-weight: 700;
+}
+
+.bonus {
+  color: var(--spark-ink);
+  margin-left: var(--s-2);
+  font-weight: 700;
+}
+
+/* ----------------------------------------------------------- misc --- */
+
+.muted {
+  color: var(--ink-3);
+  font-size: var(--t-tiny);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  text-align: center;
+  padding: var(--s-8) var(--s-6);
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  margin: 0;
+  color: var(--ink-1);
+}
+
+.emptyNote {
+  margin: 0;
+  max-width: 54ch;
+  color: var(--ink-3);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+
+@media (max-width: 980px) {
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .masteryRow {
+    grid-template-columns: minmax(0, 1fr) 60px;
+  }
+
+  .mTrack {
+    display: none;
+  }
+
+  .barTick {
+    display: none;
+  }
+}

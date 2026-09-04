@@ -1,0 +1,524 @@
+/* ----------------------------------------------------------- identity --- */
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  flex-wrap: wrap;
+}
+
+/*
+ * The avatar is a colour plate behind Pica, cycled by clicking it.
+ *
+ * Six inks, one click each. A colour picker for six options costs a modal, a
+ * focus trap and a keyboard grid, to choose between things that all look
+ * correct -- the cheapest control that can express the choice is the choice.
+ */
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: var(--brand-wash);
+  cursor: pointer;
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--brand);
+  transition: transform var(--d-1) var(--e-snap);
+}
+
+.avatar:active {
+  transform: translateY(3px);
+}
+
+.avatar:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--focus);
+}
+
+.avatar[data-ink='go'] {
+  background: var(--go-wash);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--go);
+}
+.avatar[data-ink='review'] {
+  background: var(--review-wash);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--review);
+}
+.avatar[data-ink='streak'] {
+  background: var(--streak-wash);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--streak);
+}
+.avatar[data-ink='xp'] {
+  background: var(--xp-wash);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--xp);
+}
+.avatar[data-ink='spark'] {
+  background: var(--spark-wash);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    inset 0 0 0 2px var(--spark);
+}
+
+.identityText {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-1);
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  cursor: text;
+}
+
+.name svg {
+  color: var(--ink-3);
+}
+
+.name:hover svg {
+  color: var(--brand-ink);
+}
+
+.name:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+  border-radius: var(--r-xs);
+}
+
+.nameInput {
+  align-self: flex-start;
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  color: var(--ink-1);
+  background: var(--paper-sunk);
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: 2px var(--s-3);
+  box-shadow: inset 0 0 0 2px var(--brand);
+  max-width: 100%;
+}
+
+.nameInput:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--brand),
+    0 0 0 3px var(--brand-wash);
+}
+
+.levelTitle {
+  font-size: var(--t-base);
+  font-weight: 700;
+  color: var(--xp);
+}
+
+.identityStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.levelRing {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.levelNum {
+  font-size: var(--t-h3);
+  font-weight: 800;
+  color: var(--xp);
+}
+
+.levelNext {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- achievements --- */
+
+.achHead {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.achCount {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.linkToggle {
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--brand-ink);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-xs);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+}
+
+.linkToggle:hover {
+  background: var(--brand-wash);
+}
+
+.achGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--s-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.achTile {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  width: 100%;
+  height: 100%;
+  padding: var(--s-4);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink-1);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow:
+    0 2px 0 0 var(--paper-edge),
+    inset 0 0 0 1.5px var(--edge);
+  transition: box-shadow var(--d-1) var(--e-snap);
+}
+
+.achTile:hover {
+  box-shadow:
+    0 2px 0 0 var(--paper-edge),
+    inset 0 0 0 1.5px var(--edge-strong);
+}
+
+.achTile:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--focus);
+}
+
+/* Locked is RECESSED, not hidden and not greyed into illegibility -- the text
+   is the goal, so it has to stay readable. */
+.achTile[data-locked] {
+  background: var(--paper-sunk);
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+}
+
+.achIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--spark-wash);
+  color: var(--spark-ink);
+}
+
+.achTile[data-tier='rare'] .achIcon {
+  background: var(--brand-wash);
+  color: var(--brand-ink);
+}
+.achTile[data-tier='epic'] .achIcon {
+  background: var(--review-wash);
+  color: var(--review-ink);
+}
+.achTile[data-tier='legendary'] .achIcon {
+  background: var(--xp-wash);
+  color: var(--xp);
+}
+
+.achTile[data-locked] .achIcon {
+  background: var(--locked-surface);
+  color: var(--locked-ink);
+}
+
+.achText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.achName {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.achDesc {
+  font-size: var(--t-tiny);
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.achXp {
+  flex: none;
+  font-size: var(--t-tiny);
+  font-weight: 800;
+  color: var(--xp);
+  font-variant-numeric: tabular-nums;
+}
+
+.achTile[data-locked] .achXp {
+  color: var(--locked-ink);
+}
+
+/* -------------------------------------------------------------- modal --- */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+  background: rgba(26, 23, 20, 0.44);
+  animation: var(--kf-fade-in) var(--d-2) var(--e-settle) both;
+}
+
+.scrim[data-presence='exiting'] {
+  animation: var(--kf-fade-out) var(--d-2) var(--e-squash) both;
+}
+
+.modal {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-7);
+  text-align: center;
+  background: var(--paper);
+  border-radius: var(--r-xl);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    var(--contact-strong);
+  animation: var(--kf-fade-up) var(--d-3) var(--e-settle) both;
+}
+
+.modalBadge {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-lg);
+  background: var(--spark-wash);
+  color: var(--spark-ink);
+}
+
+.modalBadge[data-tier='rare'] {
+  background: var(--brand-wash);
+  color: var(--brand-ink);
+}
+.modalBadge[data-tier='epic'] {
+  background: var(--review-wash);
+  color: var(--review-ink);
+}
+.modalBadge[data-tier='legendary'] {
+  background: var(--xp-wash);
+  color: var(--xp);
+}
+.modalBadge[data-locked='true'] {
+  background: var(--locked-surface);
+  color: var(--locked-ink);
+}
+
+.modalTitle {
+  font-size: var(--t-h3);
+  font-weight: 800;
+}
+
+.modalDesc {
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.modalMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--xp);
+}
+
+.modalWhen {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  margin-bottom: var(--s-3);
+}
+
+/* ------------------------------------------------------------ courses --- */
+
+.courseList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.courseRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--paper-sunk);
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+}
+
+.courseRow[data-archived] {
+  opacity: 0.62;
+}
+
+.courseMain {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.courseName {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-base);
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+
+.courseMeta {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.courseBar {
+  display: block;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+  overflow: hidden;
+}
+
+.courseFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--go);
+}
+
+.courseActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.courseFoot {
+  margin-top: var(--s-4);
+}
+
+/* --------------------------------------------------------------- data --- */
+
+.dataNote {
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--ink-3);
+  max-width: 64ch;
+}
+
+.dataRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+}
+
+.dataResult {
+  margin-bottom: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  background: var(--go-wash);
+  color: var(--go-ink);
+  font-size: var(--t-sm);
+}
+
+.dataResult[data-bad] {
+  background: var(--stop-wash);
+  color: var(--stop-ink);
+}
+
+.inlineLink {
+  color: var(--brand-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.empty {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .identity {
+    gap: var(--s-4);
+  }
+
+  .levelRing {
+    order: -1;
+  }
+}
