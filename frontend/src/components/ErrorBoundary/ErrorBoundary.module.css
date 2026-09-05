@@ -1,0 +1,49 @@
+.wrap {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  padding: var(--space-6, 24px);
+}
+
+.inner {
+  max-width: 46ch;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.title {
+  font-size: var(--text-xl, 1.35rem);
+  font-weight: 800;
+  margin: 0;
+  color: var(--ink, #1b1b1f);
+}
+
+.body {
+  margin: 0;
+  color: var(--ink-2, #55555f);
+  line-height: 1.55;
+}
+
+/* The raw message, set apart so it reads as diagnostic detail rather than as
+   something the learner is expected to act on. */
+.detail {
+  margin: 0;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: var(--radius-2, 10px);
+  background: var(--surface-2, #f2f2f5);
+  color: var(--ink-3, #74747e);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.8rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-2, 8px);
+}

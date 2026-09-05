@@ -1,396 +1,138 @@
-import { useMemo, useState } from 'react';
+import { Redirect, Route, Switch, useLocation, useSearch } from 'wouter';
+import { IconContext } from '@phosphor-icons/react';
+import { AppShell } from './layout/AppShell';
+import { Toasts } from './components/Toasts/Toasts';
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
+import { Shortcuts } from './components/Shortcuts/Shortcuts';
+import type { TopBarStats } from './layout/TopBar';
+import { ROUTES, isTakeover } from './router/routes';
+import { AppStateProvider, useAppState } from './state/AppStateContext';
+import { selectActiveCourse, selectLevel, selectStreak, selectXpToday } from './state/selectors';
+import { TodayScreen } from './screens/TodayScreen';
+import { PathScreen } from './screens/PathScreen';
+import { OnboardingScreen } from './screens/OnboardingScreen';
+import { SessionScreen } from './screens/SessionScreen';
+import {
+  NotFoundScreen,
+  ProfileScreen,
+  ProgressScreen,
+  ReviewScreen,
+  ScheduleScreen,
+  SettingsScreen,
+} from './screens';
 
-type TopicForm = {
-  topic: string;
-  dailyTime: number;
-  level: 'Easy' | 'Medium' | 'Hard';
-};
-
-type Concept = {
-  id: string;
-  name: string;
-  order: number;
-  mastery: number;
-  status: 'locked' | 'current' | 'completed' | 'needs-review';
-};
-
-type Question = {
-  id: string;
-  type: 'multiple-choice' | 'short-answer';
-  prompt: string;
-  options?: string[];
-  correctAnswer?: string;
-  answer?: string;
-};
-
-type Lesson = {
-  concept: string;
-  title: string;
-  explanation: string;
-  example: string;
-  questions: Question[];
-};
-
-type AssessmentResult = {
-  score: number;
-  correct: boolean;
-  misconceptions: string[];
-  feedback: string;
-  needs_review: boolean;
-};
-
-const defaultForm: TopicForm = {
-  topic: 'Probability',
-  dailyTime: 10,
-  level: 'Medium',
-};
-
-const demoConcepts: Concept[] = [
-  { id: '1', name: 'Sample Spaces', order: 1, mastery: 30, status: 'completed' },
-  { id: '2', name: 'Events', order: 2, mastery: 45, status: 'completed' },
-  { id: '3', name: 'Basic Probability', order: 3, mastery: 62, status: 'completed' },
-  { id: '4', name: 'Conditional Probability', order: 4, mastery: 58, status: 'current' },
-  { id: '5', name: 'Independence', order: 5, mastery: 40, status: 'locked' },
-  { id: '6', name: "Bayes' Theorem", order: 6, mastery: 20, status: 'locked' },
-  { id: '7', name: 'Random Variables', order: 7, mastery: 10, status: 'locked' },
-];
-
-const demoLesson: Lesson = {
-  concept: 'Conditional Probability',
-  title: 'Understanding conditional probability',
-  explanation:
-    'Conditional probability asks: if we already know that event B happened, what is the chance that event A also happened? We write it as P(A|B), which means probability of A given B.',
-  example:
-    'If 20 of 100 students study statistics and 10 of those 20 also play chess, then the chance a student plays chess given they study statistics is 10/20 = 0.5.',
-  questions: [
-    {
-      id: 'mc1',
-      type: 'multiple-choice',
-      prompt: 'Which equation represents conditional probability?',
-      options: ['P(A|B) = P(A) / P(B)', 'P(A|B) = P(A and B) / P(B)', 'P(A|B) = P(A and B) + P(B)', 'P(A|B) = P(B) / P(A)'],
-      correctAnswer: 'P(A|B) = P(A and B) / P(B)',
-    },
-    {
-      id: 'sa1',
-      type: 'short-answer',
-      prompt: 'Explain conditional probability in your own words and give one example.',
-    },
-  ],
-};
-
-function App() {
-  const [form, setForm] = useState<TopicForm>(defaultForm);
-  const [showSetup, setShowSetup] = useState(true);
-  const [pathGenerated, setPathGenerated] = useState(false);
-  const [selectedConcept, setSelectedConcept] = useState('Conditional Probability');
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [showAssessment, setShowAssessment] = useState(false);
-  const [concepts, setConcepts] = useState<Concept[]>(demoConcepts);
-  const [lesson, setLesson] = useState<Lesson | null>(demoLesson);
-  const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const progressStats = useMemo(() => {
-    const completed = concepts.filter((c) => c.status === 'completed').length;
-    const mastered = concepts.filter((c) => c.mastery >= 75).length;
-    const review = concepts.filter((c) => c.status === 'needs-review').length;
-    const total = concepts.length;
-    return { completed, mastered, review, total, streak: 6, sessions: 9 };
-  }, [concepts]);
-
-  const activeLesson = lesson ?? demoLesson;
-  const currentQuestionData = activeLesson.questions[currentQuestion] ?? activeLesson.questions[0];
-
-  const generateLearningPath = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const setupResponse = await fetch('http://localhost:8000/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: form.topic,
-          goal: '',
-          daily_time: form.dailyTime,
-          level: form.level,
-        }),
-      });
-
-      if (!setupResponse.ok) {
-        throw new Error('Unable to generate path');
-      }
-
-      const setupData = await setupResponse.json();
-      setConcepts(setupData.concepts || demoConcepts);
-      setSelectedConcept((setupData.concepts || demoConcepts)[3]?.name || 'Conditional Probability');
-
-      const lessonResponse = await fetch('http://localhost:8000/lesson', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: form.topic,
-          goal: '',
-          daily_time: form.dailyTime,
-          level: form.level,
-        }),
-      });
-
-      if (!lessonResponse.ok) {
-        throw new Error('Unable to generate lesson');
-      }
-
-      const lessonData = await lessonResponse.json();
-      setLesson(lessonData);
-      setPathGenerated(true);
-      setShowSetup(false);
-      setShowAssessment(false);
-      setCurrentQuestion(0);
-      setAnswers({});
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.');
-      setPathGenerated(true);
-      setShowSetup(false);
-      setLesson(demoLesson);
-      setConcepts(demoConcepts);
-    } finally {
-      setIsLoading(false);
-    }
+function useTopBarStats(): TopBarStats {
+  const app = useAppState();
+  const course = selectActiveCourse(app);
+  const level = selectLevel(app);
+  return {
+    courseName: course?.topic ?? 'No course yet',
+    streak: selectStreak(app),
+    xpToday: selectXpToday(app),
+    dailyGoalXp: app.settings.dailyGoalXp,
+    totalXp: app.profile.totalXp,
+    level: level.level,
+    initials: app.profile.displayName.slice(0, 2).toUpperCase() || 'YOU',
   };
+}
 
-  const handleAnswer = async (value: string) => {
-    const current = activeLesson.questions[currentQuestion];
-    const updatedAnswers = { ...answers, [current.id]: value };
-    setAnswers(updatedAnswers);
-
-    if (currentQuestion < activeLesson.questions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const assessmentResponse = await fetch('http://localhost:8000/assess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: form.topic,
-          answers: updatedAnswers,
-          lesson: activeLesson,
-        }),
-      });
-
-      if (!assessmentResponse.ok) {
-        throw new Error('Assessment failed');
-      }
-
-      const result = await assessmentResponse.json();
-      setAssessment(result);
-      setShowAssessment(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Assessment failed.');
-      setAssessment({
-        score: 75,
-        correct: true,
-        misconceptions: ['Confuses P(A|B) with P(B|A)'],
-        feedback:
-          'You understand the basic idea, but you should be careful not to reverse the condition and the event. Review the definition and compare P(A|B) with P(B|A) in a worked example.',
-        needs_review: true,
-      });
-      setShowAssessment(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetTopicFlow = () => {
-    setShowSetup(true);
-    setPathGenerated(false);
-    setShowAssessment(false);
-    setCurrentQuestion(0);
-    setAnswers({});
-    setAssessment(null);
-    setLesson(demoLesson);
-  };
-
+function Shell() {
+  const stats = useTopBarStats();
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">AI Learning</div>
-        <nav>
-          <button className="nav-button active">Home</button>
-          <button className="nav-button">Setup</button>
-          <button className="nav-button">Learning Path</button>
-          <button className="nav-button">Daily Lesson</button>
-          <button className="nav-button">Results</button>
-          <button className="nav-button">Progress</button>
-        </nav>
-      </aside>
-
-      <main className="content">
-        <header className="topbar">
-          <div>
-            <div className="eyebrow">Current goal</div>
-            <h1>{form.topic}</h1>
-          </div>
-          <div className="tag">{form.dailyTime} min / day</div>
-        </header>
-
-        {error && <div className="error-banner">{error}</div>}
-
-        {showSetup && (
-          <section className="panel">
-            <h2>Topic setup</h2>
-            <div className="form-grid">
-              <label>
-                Topic
-                <input
-                  value={form.topic}
-                  onChange={(e) => setForm((prev) => ({ ...prev, topic: e.target.value }))}
-                />
-              </label>
-              <label>
-                Difficulty level
-                <select
-                  value={form.level}
-                  onChange={(e) => setForm((prev) => ({ ...prev, level: e.target.value as TopicForm['level'] }))}
-                >
-                  <option>Easy</option>
-                  <option>Medium</option>
-                  <option>Hard</option>
-                </select>
-              </label>
-              <label>
-                Daily time (minutes)
-                <input
-                  type="number"
-                  min={5}
-                  max={15}
-                  value={form.dailyTime}
-                  onChange={(e) => setForm((prev) => ({ ...prev, dailyTime: Number(e.target.value) }))}
-                />
-              </label>
-            </div>
-            <button className="primary-button" onClick={generateLearningPath} disabled={isLoading}>
-              {isLoading ? 'Generating...' : 'Generate learning path'}
-            </button>
-          </section>
-        )}
-
-        {pathGenerated && !showSetup && (
-          <>
-            <section className="stats-grid">
-              <div className="stat-card">
-                <span>Current streak</span>
-                <strong>{progressStats.streak} days</strong>
-              </div>
-              <div className="stat-card">
-                <span>Sessions completed</span>
-                <strong>{progressStats.sessions}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Concepts learned</span>
-                <strong>{progressStats.completed}/{progressStats.total}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Needs review</span>
-                <strong>{progressStats.review}</strong>
-              </div>
-            </section>
-
-            <section className="split-panel">
-              <div className="panel">
-                <h2>Learning path</h2>
-                <ul className="concept-list">
-                  {concepts.map((concept) => (
-                    <li
-                      key={concept.id}
-                      className={selectedConcept === concept.name ? 'selected' : ''}
-                      onClick={() => setSelectedConcept(concept.name)}
-                    >
-                      <div className="concept-left">
-                        <span className={`status-dot ${concept.status}`} />
-                        <span>{concept.name}</span>
-                      </div>
-                      <span className="mastery-pill">{concept.mastery}%</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="panel lesson-panel">
-                <div className="lesson-header">
-                  <div>
-                    <div className="eyebrow">Today’s concept</div>
-                    <h2>{activeLesson.concept}</h2>
-                  </div>
-                  <div className="chip">Adaptive review</div>
-                </div>
-
-                {!showAssessment ? (
-                  <>
-                    <div className="slide-box">
-                      <h3>{activeLesson.title}</h3>
-                      <p>{activeLesson.explanation}</p>
-                      <div className="example-box">Example: {activeLesson.example}</div>
-                    </div>
-
-                    <div className="question-box">
-                      <p>{currentQuestionData.prompt}</p>
-                      {currentQuestionData.type === 'multiple-choice' && currentQuestionData.options ? (
-                        <div className="options-grid">
-                          {currentQuestionData.options.map((option) => (
-                            <button key={option} className="option-button" onClick={() => handleAnswer(option)} disabled={isLoading}>
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <>
-                          <textarea
-                            placeholder="Type your answer here..."
-                            value={answers[currentQuestionData.id] || ''}
-                            onChange={(e) => setAnswers((prev) => ({ ...prev, [currentQuestionData.id]: e.target.value }))}
-                          />
-                          <button className="primary-button" onClick={() => handleAnswer(answers[currentQuestionData.id] || '')} disabled={isLoading}>
-                            {isLoading ? 'Submitting...' : 'Submit response'}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="results-panel">
-                    <h3>Assessment results</h3>
-                    <div className="score-row">
-                      <span>Score</span>
-                      <strong>{assessment?.score ?? 0}%</strong>
-                    </div>
-                    <p>
-                      <strong>AI feedback:</strong> {assessment?.feedback}
-                    </p>
-                    <p>
-                      <strong>Misconceptions:</strong> {assessment?.misconceptions.join(', ') || 'None identified'}
-                    </p>
-                    <div className="recommendation-box">
-                      Review {activeLesson.concept} tomorrow before moving on to Bayes&apos; theorem.
-                    </div>
-                    <button className="primary-button" onClick={resetTopicFlow}>
-                      Start another topic
-                    </button>
-                  </div>
-                )}
-              </div>
-            </section>
-          </>
-        )}
-      </main>
-    </div>
+    <AppShell stats={stats}>
+      <Switch>
+        <Route path="/" component={() => <Redirect to={ROUTES.today} />} />
+        <Route path={ROUTES.today} component={TodayScreen} />
+        <Route path={ROUTES.path} component={PathScreen} />
+        <Route path={ROUTES.review} component={ReviewScreen} />
+        <Route path={ROUTES.progress} component={ProgressScreen} />
+        <Route path={ROUTES.schedule} component={ScheduleScreen} />
+        {/* settings before profile: wouter matches in order */}
+        <Route path={ROUTES.settings} component={SettingsScreen} />
+        <Route path={ROUTES.profile} component={ProfileScreen} />
+        <Route component={NotFoundScreen} />
+      </Switch>
+    </AppShell>
   );
 }
 
-export default App;
+function Routed() {
+  const [location] = useLocation();
+  const search = useSearch();
+  const app = useAppState();
+
+  // First run goes to onboarding. Dropping someone on an empty Today screen and
+  // making them hunt for the setup flow is how the previous build opened.
+  if (!app.onboarded && !location.startsWith('/onboarding')) {
+    return <Redirect to={ROUTES.onboarding} />;
+  }
+
+  // Takeovers suspend the shell entirely -- the lesson player owns the viewport
+  // so nothing competes with the question.
+  if (isTakeover(location)) {
+    const takeover = (
+      <Switch>
+        <Route path={ROUTES.onboarding} component={OnboardingScreen} />
+        {/*
+          Keyed by the WHOLE session identity -- concept plus query -- so every
+          distinct run remounts the player.
+
+          Keying on the concept alone was not enough. "Try this again" navigates
+          to the same concept with `?mode=practice`: same pathname, same key, no
+          remount, so the session reducer AND the one-shot `committed` flag
+          carried over. `committed` is never reset, so the retry reached
+          `evaluating`, the commit effect returned at its guard, and the
+          "Checking answers…" spinner ran forever with no way out but Escape.
+          Answers, combo and hearts leaked across the boundary too.
+        */}
+        <Route path={ROUTES.session}>
+          {(params) => <SessionScreen key={`${params.conceptId}?${search}`} />}
+        </Route>
+        <Route component={NotFoundScreen} />
+      </Switch>
+    );
+
+    // Keyed on the full session identity, same as the player itself: a crash in
+    // one run must not persist into the next one the learner starts.
+    return (
+      <ErrorBoundary resetKey={`${location}?${search}`}>{takeover}</ErrorBoundary>
+    );
+  }
+
+  return (
+    <ErrorBoundary resetKey={location}>
+      <Shell />
+    </ErrorBoundary>
+  );
+}
+
+export default function App() {
+  return (
+    /**
+     * Every Phosphor icon in this app is DECORATIVE.
+     *
+     * Each one sits inside a control that already has a name -- a rail link
+     * with visible text, a button with a label, an aria-label where the text is
+     * hidden at narrow widths. Without aria-hidden a screen reader announces
+     * the icon as a second, nameless graphic next to the thing it decorates,
+     * which the audit found nine of on the Today screen alone.
+     *
+     * Set once through the icon library's own context rather than on thirty
+     * call sites, so a newly added icon is correct by default. An icon that
+     * ever needs to carry meaning on its own can still pass its own aria-label,
+     * which wins over the context value.
+     */
+    <IconContext.Provider value={{ 'aria-hidden': true }}>
+    <AppStateProvider>
+      <Routed />
+      {/* Outside Routed: a storage failure during a lesson is exactly when the
+          user most needs to hear about it, and takeovers replace the shell. */}
+      <Toasts />
+      {/* Also outside: the shortcut listener is global, and the help sheet has
+          to be able to open over a takeover even though the jumps do not fire
+          there. */}
+      <Shortcuts />
+    </AppStateProvider>
+    </IconContext.Provider>
+  );
+}
