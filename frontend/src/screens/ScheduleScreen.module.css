@@ -1,0 +1,618 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------- plan form --- */
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/*
+ * Native <input type="time"> and <select>, restyled rather than replaced.
+ *
+ * A hand-built time picker would have to reimplement 12/24-hour handling, the
+ * platform keyboard on mobile, and every locale's expectations about which
+ * field comes first. The native control already knows all of that, and the only
+ * thing wrong with it by default is that it does not look like this app.
+ */
+.input {
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--ink-1);
+  background: var(--paper-sunk);
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: var(--s-3) var(--s-4);
+  box-shadow: inset 0 0 0 1.5px var(--edge-strong);
+  min-width: 0;
+  width: 100%;
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--brand),
+    0 0 0 3px var(--brand-wash);
+}
+
+/* ------------------------------------------------------ weekday pills --- */
+
+.pillsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.pill {
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--paper);
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: var(--s-2) var(--s-4);
+  cursor: pointer;
+  box-shadow:
+    0 2px 0 0 var(--paper-edge),
+    inset 0 0 0 1.5px var(--edge-strong);
+  transition:
+    transform var(--d-1) var(--e-snap),
+    box-shadow var(--d-1) var(--e-snap);
+}
+
+.pill[data-on='true'] {
+  background: var(--brand);
+  color: var(--on-fill);
+  box-shadow:
+    0 2px 0 0 var(--brand-shade),
+    inset 0 0 0 1.5px var(--brand-shade);
+}
+
+.pill:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 0 0 1.5px var(--edge-strong);
+}
+
+/* The last selected day is disabled rather than hidden -- it still shows as
+   chosen, it just cannot be the one you turn off. */
+.pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.pill:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--focus);
+}
+
+.planFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1.5px solid var(--edge);
+}
+
+.planSummary {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.planNote,
+.blockNote {
+  margin-top: var(--s-4);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--ink-3);
+  max-width: 62ch;
+}
+
+/* --------------------------------------------------------- review row --- */
+
+.reviewRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  margin-top: var(--s-4);
+}
+
+.reviewCount {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.reviewCount strong {
+  font-size: var(--t-h3);
+  font-weight: 800;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+  margin-right: var(--s-2);
+}
+
+.exported {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  font-size: var(--t-tiny);
+  color: var(--go-ink);
+}
+
+.note {
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--brand-wash);
+  color: var(--brand-ink);
+  font-size: var(--t-sm);
+  animation: var(--kf-fade-up) var(--d-3) var(--e-settle) both;
+}
+
+/* -------------------------------------------------------- export menu --- */
+
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--s-2));
+  right: 0;
+  z-index: var(--z-drawer);
+  width: min(340px, 84vw);
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-2);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow:
+    0 3px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge-strong),
+    var(--contact-strong);
+  animation: var(--kf-fade-up) var(--d-2) var(--e-settle) both;
+}
+
+.menuItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-1);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: var(--paper-sunk);
+}
+
+.menuItem:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
+.menuIcon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--brand-ink);
+}
+
+.menuText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.menuLabel {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+/* The gap note is the point of this menu, so it is not a whisper: --ink-3 at
+   tiny size still clears 4.5:1 on paper. */
+.menuNote {
+  font-size: var(--t-tiny);
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+/* ------------------------------------------------------------- month --- */
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.navBtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--t-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.navBtn:hover {
+  background: var(--paper-sunk);
+  color: var(--ink-1);
+}
+
+.navToday {
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--brand-ink);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-xs);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+}
+
+.navToday:hover {
+  background: var(--brand-wash);
+}
+
+.monthLabel {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  margin-bottom: var(--s-4);
+}
+
+.monthHead,
+.month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+.monthHead {
+  margin-bottom: var(--s-2);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 54px;
+  padding: var(--s-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--paper-sunk);
+  color: var(--ink-1);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+}
+
+.day:hover {
+  box-shadow: inset 0 0 0 1.5px var(--edge-strong);
+}
+
+.day[data-dim='true'] {
+  opacity: 0.42;
+}
+
+.day[data-today='true'] {
+  box-shadow: inset 0 0 0 2.5px var(--spark);
+}
+
+.day[data-active='true'] {
+  background: var(--brand-wash);
+  box-shadow: inset 0 0 0 2.5px var(--brand);
+}
+
+.day:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 6px var(--focus);
+}
+
+.dayNum {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dayMarks {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 14px;
+  font-size: var(--t-micro);
+}
+
+.markXp {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--go);
+}
+
+/* A planned day is hollow: it is an intention, not a record. The distinction
+   matters on a calendar that shows both. */
+.markPlanned {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+.markFreeze {
+  color: var(--brand-ink);
+  line-height: 1;
+}
+
+.markDue {
+  display: grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: var(--r-pill);
+  background: var(--review);
+  color: var(--on-fill);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.dayDetail {
+  margin-top: var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--paper-sunk);
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+  animation: var(--kf-fade-up) var(--d-2) var(--e-settle) both;
+}
+
+.dayDetailHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  font-size: var(--t-base);
+}
+
+.dayStat {
+  margin-top: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.dayDue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+/* ------------------------------------------------------------ heatmap --- */
+
+/*
+ * Cell size is FIXED, not fluid.
+ *
+ * The first version let each week column flex to fill the card, which on a
+ * desktop card produced 70px squares: eighty-four large tiles that read as a
+ * grid of buttons rather than as a year at a glance. A heatmap only works when
+ * the whole shape is smaller than a fixation -- you are meant to see the
+ * pattern, not count the days.
+ *
+ * --cell is the single knob, shared by the grid and the legend so they can
+ * never drift apart.
+ */
+.heatWrap {
+  --cell: 13px;
+  --cell-gap: 3px;
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  gap: var(--s-3);
+  align-items: start;
+}
+
+.heatDays {
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  gap: var(--cell-gap);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink-3);
+  text-align: right;
+  line-height: var(--cell);
+}
+
+.heat {
+  display: flex;
+  gap: var(--cell-gap);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.heatWeek {
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  gap: var(--cell-gap);
+  flex: none;
+}
+
+/*
+ * Intensity is a FLAT RAMP of one ink, not a rainbow.
+ *
+ * Four steps of the same hue reads as "more or less of the same thing", which
+ * is what the data is. Mapping the levels onto different colours would imply
+ * they are different kinds of day.
+ */
+.heatCell {
+  width: var(--cell, 13px);
+  height: var(--cell, 13px);
+  border-radius: 3px;
+  background: var(--paper-sunk);
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.heatCell[data-level='1'] {
+  background: var(--go-wash);
+  box-shadow: none;
+}
+
+.heatCell[data-level='2'] {
+  background: color-mix(in srgb, var(--go) 45%, var(--go-wash));
+  box-shadow: none;
+}
+
+.heatCell[data-level='3'] {
+  background: color-mix(in srgb, var(--go) 75%, var(--go-wash));
+  box-shadow: none;
+}
+
+.heatCell[data-level='4'] {
+  background: var(--go);
+  box-shadow: none;
+}
+
+/* A freeze is not a lighter shade of activity -- it is a different event, so it
+   gets a different ink and a ring rather than a fill. */
+.heatCell[data-freeze='true'] {
+  background: var(--brand-wash);
+  box-shadow: inset 0 0 0 1.5px var(--brand);
+}
+
+.heatCell[data-future='true'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.heatKey {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--s-3);
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+}
+
+.heatKey .heatCell {
+  flex: none;
+}
+
+.heatKeyLabel {
+  margin: 0 var(--s-2);
+}
+
+.streakChip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-tiny);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------- coming with accounts --- */
+
+.laterList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.laterItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--paper-sunk);
+  box-shadow: inset 0 0 0 1.5px var(--edge);
+}
+
+.laterTitle {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.laterWhy {
+  font-size: var(--t-tiny);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+@media (max-width: 560px) {
+  .day {
+    min-height: 44px;
+  }
+
+  .planFoot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
