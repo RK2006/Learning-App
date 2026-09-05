@@ -1,0 +1,267 @@
+/* ---------------------------------------------------------- filters --- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--paper);
+  border: 2px solid var(--edge-strong);
+  border-radius: var(--r-pill);
+  padding: var(--s-2) var(--s-4);
+  cursor: pointer;
+  transition:
+    background var(--d-1) var(--e-snap),
+    color var(--d-1) var(--e-snap),
+    border-color var(--d-1) var(--e-snap);
+}
+
+.filter:hover {
+  border-color: var(--review);
+}
+
+/* Selected reads as selected without relying on colour: the fill flips AND the
+   count badge inverts. */
+.filter[data-on='true'] {
+  background: var(--review);
+  border-color: var(--review-shade);
+  color: var(--on-fill);
+}
+
+.filterCount {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-micro);
+  min-width: 18px;
+  padding: 1px var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--paper-sunk);
+  color: var(--ink-3);
+}
+
+.filter[data-on='true'] .filterCount {
+  background: var(--review-shade);
+  color: var(--on-fill);
+}
+
+/* ------------------------------------------------------------- rows --- */
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-top: 1px solid var(--edge);
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.rowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rowName {
+  font-weight: 700;
+  font-size: var(--t-sm);
+  color: var(--ink-1);
+}
+
+.rowMeta {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+
+/* ----------------------------------------------------------- snooze --- */
+
+.snoozeWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.snoozeMenu {
+  position: absolute;
+  top: calc(100% + var(--s-2));
+  right: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  min-width: 132px;
+  padding: var(--s-2);
+  background: var(--paper);
+  border: 2px solid var(--edge-strong);
+  border-radius: var(--r-sm);
+  box-shadow: var(--contact-strong);
+}
+
+.snoozeItem {
+  font: inherit;
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-xs);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+}
+
+.snoozeItem:hover {
+  background: var(--review-wash);
+  color: var(--review-ink);
+}
+
+.snoozeSpent {
+  font-size: var(--t-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--stop-ink);
+  background: var(--stop-wash);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-xs);
+}
+
+/* --------------------------------------------------------- forecast --- */
+
+.forecastCard {
+  margin-top: var(--s-6);
+}
+
+.forecastNote {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  line-height: 1.5;
+  max-width: 64ch;
+}
+
+.forecastList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.forecastList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  align-items: center;
+  gap: var(--s-4);
+  font-size: var(--t-tiny);
+}
+
+.fcName {
+  font-weight: 600;
+  color: var(--ink-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fcBar {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--paper-sunk);
+  overflow: hidden;
+}
+
+.fcBarFill {
+  display: block;
+  height: 100%;
+  background: var(--review);
+  border-radius: var(--r-pill);
+}
+
+.fcWhen {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ empty --- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  text-align: center;
+  padding: var(--s-8) var(--s-6);
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  margin: 0;
+  color: var(--ink-1);
+}
+
+.emptyNote {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--ink-3);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+
+.empty .forecastList {
+  width: 100%;
+  max-width: 460px;
+  text-align: left;
+  margin-top: var(--s-3);
+}
+
+.empty .forecastList li {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 760px) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .rowActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .forecastList li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fcBar {
+    display: none;
+  }
+}
