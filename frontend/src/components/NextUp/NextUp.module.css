@@ -1,0 +1,60 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3, #74747e);
+}
+
+.reason,
+.pitch {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--ink, #1b1b1f);
+}
+
+.pitch {
+  color: var(--ink-2, #55555f);
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.restNote,
+.footnote,
+.error {
+  font-size: 0.78rem;
+  color: var(--ink-3, #74747e);
+  margin: 0;
+}
+
+.error {
+  color: var(--stop, #b3261e);
+}
+
+/* Small and always present: the division of labour between the device and the
+   model is the kind of thing a user should be able to check, not infer. */
+.footnote {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
