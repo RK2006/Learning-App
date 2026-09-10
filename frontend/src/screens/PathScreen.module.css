@@ -1,0 +1,342 @@
+/*
+ * The drawer column only exists when a drawer does.
+ *
+ * Reserving 380px unconditionally pushed the whole path off-centre into the
+ * left two thirds and left a column of empty paper beside it -- which on a wide
+ * screen reads as a layout that has lost something, not as breathing room.
+ */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+}
+
+.layout[data-drawer='true'] {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+/*
+ * THE WAVE.
+ *
+ * Duolingo's path is circular nodes on a sine curve with NO connecting line --
+ * the offsets alone read as a route, and a drawn line would only fight them.
+ *
+ * The first attempt here was a spine with wide cards alternating either side of
+ * it. The geometry cannot work: a card wide enough to hold a title and two
+ * lines of state is more than half the column, so it already crosses the centre
+ * line, and the "joints" ended up floating in space beside it. Either the node
+ * shrinks to a circle or the serpentine does not exist. It shrinks.
+ *
+ * Pure CSS, no measurement: an SVG connector would need each node's laid-out
+ * position, which means a layout read on every resize and a first-paint where
+ * the line is not there yet -- all for a decoration this design does not use.
+ */
+.track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-6);
+  list-style: none;
+  margin: 0;
+  padding: var(--s-4) 0 var(--s-8);
+  position: relative;
+}
+
+.node {
+  position: relative;
+  /* A percentage in translateX resolves against the ELEMENT's own width, not
+     the track's -- so the wave is a fixed fraction of the node and keeps its
+     shape at any column width instead of clipping at the edges. */
+  transform: translateX(var(--dx));
+}
+
+/* One period of the wave, then it repeats. Eight steps rather than a simple
+   left/right alternation: a two-position zigzag reads as a table with a stagger,
+   a longer period reads as a path that is going somewhere. */
+.node:nth-child(8n + 1) { --dx: 0%; }
+.node:nth-child(8n + 2) { --dx: 32%; }
+.node:nth-child(8n + 3) { --dx: 46%; }
+.node:nth-child(8n + 4) { --dx: 32%; }
+.node:nth-child(8n + 5) { --dx: 0%; }
+.node:nth-child(8n + 6) { --dx: -32%; }
+.node:nth-child(8n + 7) { --dx: -46%; }
+.node:nth-child(8n + 0) { --dx: -32%; }
+
+/*
+ * The node is a disc with its label beneath it.
+ *
+ * One of only two hover-lifts in the app, and only 2px -- cards never lift,
+ * because hover-lifting cards is one of the loudest generated-UI tells. A path
+ * node earns it: it is the one thing on this screen you are meant to aim at.
+ *
+ * The entrance animates THIS element rather than the li, because the li carries
+ * `transform: translateX(var(--dx))` -- the serpentine wave itself. An
+ * animation on the same transform property replaces that declaration outright
+ * for its duration, so every node would slide in from the centre column and
+ * only snap onto the wave once the animation finished.
+ *
+ * No overshoot: --e-pop is reserved for rewards, and this entrance plays on
+ * every visit to the screen, not only when a path is first generated.
+ */
+.nodeBtn {
+  animation: nodeIn var(--d-3) var(--e-settle) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  width: 210px;
+  padding: var(--s-3);
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--ink-1);
+  text-align: center;
+  transition: transform var(--d-2) var(--e-snap);
+}
+
+/* The disc itself, drawn behind the ring so the ring reads as a gauge around a
+   physical button rather than a floating arc. */
+.nodeDisc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  box-shadow:
+    0 4px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    var(--contact);
+  transition:
+    transform var(--d-2) var(--e-snap),
+    box-shadow var(--d-2) var(--e-snap);
+}
+
+.nodeBtn:hover .nodeDisc {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge),
+    var(--contact-strong);
+}
+
+.nodeBtn:active .nodeDisc {
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge);
+  transition-duration: 40ms;
+}
+
+.nodeBtn[data-status='locked'] .nodeDisc {
+  background: var(--locked-surface);
+  box-shadow:
+    0 4px 0 0 var(--paper-edge),
+    0 0 0 1.5px var(--edge);
+}
+
+.nodeBtn[data-status='locked'] {
+  color: var(--locked-ink);
+}
+
+/* Where you are. A ring of spark ink plus the star glyph inside -- never colour
+   alone. */
+.nodeBtn[data-status='current'] .nodeDisc {
+  box-shadow:
+    0 4px 0 0 var(--paper-edge),
+    0 0 0 3px var(--spark),
+    var(--contact);
+}
+
+.nodeBtn[aria-pressed='true'] .nodeDisc {
+  box-shadow:
+    0 4px 0 0 var(--paper-edge),
+    0 0 0 3px var(--brand),
+    var(--contact);
+}
+
+.nodeText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.nodeName {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.nodeMeta {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+}
+
+.nodeBtn[data-status='locked'] .nodeMeta {
+  color: var(--locked-ink);
+}
+
+/* ------------------------------------------------------------- drawer --- */
+
+.drawer {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--s-5));
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.drawerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.drawerTitle {
+  margin-top: var(--s-2);
+  font-size: var(--t-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.stats dt {
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.stats dd {
+  margin: 2px 0 0;
+  font-size: var(--t-base);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lockNote {
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--locked-surface);
+  color: var(--locked-ink);
+  font-size: var(--t-sm);
+}
+
+.misc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.srs {
+  font-size: var(--t-tiny);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.drawerActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-4);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .drawer {
+    position: static;
+  }
+}
+
+/*
+ * At phone width a +-19% wave would push a 210px node off both edges. The
+ * amplitude halves rather than the wave disappearing: a straight column of
+ * discs would lose the one thing the wave is carrying, which is that this is a
+ * route with an order.
+ */
+@media (max-width: 720px) {
+  .node:nth-child(8n + 2),
+  .node:nth-child(8n + 4) { --dx: 18%; }
+  .node:nth-child(8n + 3) { --dx: 26%; }
+  .node:nth-child(8n + 6),
+  .node:nth-child(8n + 0) { --dx: -18%; }
+  .node:nth-child(8n + 7) { --dx: -26%; }
+
+  .nodeBtn {
+    width: 168px;
+  }
+}
+
+/*
+ * Node entrance: a lift and a settle, no bounce.
+ *
+ * scale starts at 0.86 rather than 0 -- a node growing from nothing reads as
+ * being created, and these concepts were created when the path was generated,
+ * not when the screen was opened.
+ */
+@keyframes nodeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The end-of-path affordance. Finishing a course used to lead nowhere. */
+.extend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.extendText {
+  flex: 1 1 20ch;
+  min-width: 0;
+}
+
+.extendText p {
+  margin: 4px 0 0;
+  color: var(--ink-2, #55555f);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.extendError {
+  color: var(--stop, #b3261e);
+}
