@@ -4,3 +4,10 @@ pydantic==2.9.2
 python-dotenv==1.0.1
 openai==3.13.0
 httpx==0.27.2
+
+# --- tests ---
+# Not optional in practice: tests/ is the only thing that verifies the
+# no-key path returns no canned content, and it was added without these,
+# so a fresh clone could install the service but not check it.
+# httpx above is also what starlette's TestClient needs.
+pytest==9.1.1
