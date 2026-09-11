@@ -1,0 +1,84 @@
+.invite {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.note,
+.error {
+  font-size: 0.75rem;
+  color: var(--ink-3, #74747e);
+}
+
+.error {
+  color: var(--stop, #b3261e);
+}
+
+.wrap {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: var(--radius-2, 10px);
+  background: var(--surface-2, #f2f2f5);
+  text-align: left;
+}
+
+.label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.box {
+  width: 100%;
+  min-height: 6.5rem;
+  padding: 10px 12px;
+  border-radius: var(--radius-2, 10px);
+  border: 1px solid var(--line, #d9d9e0);
+  background: var(--surface, #fff);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.result {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.group ul {
+  margin: 4px 0 0;
+  padding-left: 1.1rem;
+  line-height: 1.5;
+  font-size: 0.87rem;
+}
+
+.groupLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3, #74747e);
+}
+
+.group[data-tone='stop'] .groupLabel {
+  color: var(--stop, #b3261e);
+}
+
+.followUp {
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
