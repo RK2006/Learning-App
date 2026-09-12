@@ -137,59 +137,77 @@ function shortRef(concept: string): string {
  * demonstrate an unbounded path, and the whole point of the mock is that it
  * exercises the same shapes the real provider does.
  *
- * So names are now built from two independent axes -- an ARC position (where in
- * a course this concept sits) and a LENS (what angle it takes) -- which
- * multiply out to far more distinct names than any list, and degrade gracefully
- * past that by qualifying with the lens rather than repeating.
+ * So names are built from two independent axes -- an ARC position (where in a
+ * course this concept sits) and a LENS (what angle it takes) -- which multiply
+ * out to far more distinct names than any list, and degrade gracefully past
+ * that by qualifying with the lens rather than repeating.
+ *
+ * EVERY ENTRY NAMES THE TOPIC, and several used to not. "Core building blocks",
+ * "Notation and conventions", "First principles" and "The standard method" were
+ * topic-free AND quietly assumed a technical subject, so a path for "Spanish
+ * vocabulary" opened with "Core building blocks" and went on to "Notation and
+ * conventions" -- which reads as a broken curriculum rather than as a
+ * simulation, and sent a reader hunting for a prompt bug that was not there.
+ *
+ * What this CANNOT do is know that Spanish starts with greetings. That needs a
+ * model, and faking it here would mean shipping hardcoded subject matter, which
+ * is the exact thing deleted from the backend. The mock knows the SHAPE of a
+ * course and says so; the honest fix for the rest is the live-mode banner that
+ * tells the reader which of the two they are looking at.
  */
 const ARC = [
   (t: string) => `What ${lower(t)} actually is`,
-  (t: string) => `The vocabulary of ${lower(t)}`,
-  () => 'First principles',
-  (t: string) => `Reading ${lower(t)} in the wild`,
-  () => 'Common traps',
-  () => 'Putting it together',
+  (t: string) => `The words people use about ${lower(t)}`,
+  (t: string) => `Where ${lower(t)} came from`,
+  (t: string) => `${capitalize(lower(t))} in practice`,
+  (t: string) => `Where people go wrong with ${lower(t)}`,
+  (t: string) => `Working through a case of ${lower(t)}`,
   (t: string) => `Where ${lower(t)} breaks down`,
-  () => 'Working an example end to end',
-  () => 'Edge cases that matter',
-  () => 'Judgement calls',
-  () => 'Diagnosing your own mistakes',
-  (t: string) => `Why ${lower(t)} exists`,
-  () => 'The essential distinctions',
-  () => 'Notation and conventions',
-  () => 'The standard method',
-  () => 'When the standard method fails',
-  () => 'Fluency',
-  (t: string) => `Orientation: the shape of ${lower(t)}`,
-  () => 'Core building blocks',
-  () => 'How the pieces connect',
+  (t: string) => `The distinctions that matter in ${lower(t)}`,
+  (t: string) => `Judgement calls in ${lower(t)}`,
+  (t: string) => `Diagnosing your own mistakes in ${lower(t)}`,
+  (t: string) => `Why ${lower(t)} is worth knowing`,
+  (t: string) => `The usual approach to ${lower(t)}`,
+  (t: string) => `When the usual approach to ${lower(t)} fails`,
+  (t: string) => `Edge cases in ${lower(t)}`,
+  (t: string) => `Reading ${lower(t)} in the wild`,
+  (t: string) => `Getting fluent in ${lower(t)}`,
+  (t: string) => `How the parts of ${lower(t)} connect`,
+  (t: string) => `Putting ${lower(t)} together`,
 ];
 
 const LENS = [
   'in practice',
   'under pressure',
-  'from first principles',
+  'from the ground up',
   'at scale',
   'for the sceptic',
   'when time is short',
   'in the messy case',
   'compared with the alternatives',
   'as practitioners use it',
-  'when the data is poor',
+  'when the source material is poor',
 ];
+
 
 /** Unbounded, and distinct. Past the length of ARC it qualifies with a LENS,
  *  which multiplies the space rather than wrapping back to name one. */
 function conceptNames(rng: Rng, topic: string, count: number): string[] {
-  const offset = intBetween(rng, 0, ARC.length - 1);
+  // NO random offset into the arc, and that is the whole point of it being an
+  // arc. There used to be one, to make different topics produce differently
+  // shaped paths -- and it started the sequence at a random position, so a
+  // six-concept probability course opened with "Getting fluent in probability"
+  // and reached "What probability actually is" at number four. Variety across
+  // topics is worth far less than concept 1 being the one you can start from;
+  // the LENS still supplies variety on later laps without reordering anything.
   const out: string[] = [];
   const seen = new Set<string>();
 
   for (let i = 0; out.length < count; i++) {
-    const arc = ARC[(i + offset) % ARC.length]!;
+    const arc = ARC[i % ARC.length]!;
     const round = Math.floor(i / ARC.length);
     const base = arc(topic);
-    const name = round === 0 ? base : `${base}, ${LENS[(round - 1 + offset) % LENS.length]}`;
+    const name = round === 0 ? base : `${base}, ${LENS[(round - 1) % LENS.length]}`;
     // A duplicate would collide on the path screen, where React keys by id and
     // the learner reads two identical rows as a bug in the app.
     if (seen.has(name)) continue;
