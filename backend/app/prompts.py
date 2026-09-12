@@ -25,11 +25,50 @@ payload containing a fake closing marker is why both halves exist.
 
 from __future__ import annotations
 
+# "Notation" used to appear in two of these unconditionally, which is meaningless
+# for a language, a craft or a period of history. Each guide now defers to
+# whatever the subject's own conventions actually are.
 LEVEL_GUIDE = {
-    "Easy": "Assume no background. Define every term on first use. Prefer everyday analogies over notation.",
-    "Medium": "Assume general familiarity with the subject area but not this specific concept. Introduce notation, then use it.",
-    "Hard": "Assume solid grounding. Move quickly, use precise terminology, and include an edge case or a common trap.",
+    "Easy": "Assume no background at all. Define every term the first time it appears, and prefer a familiar everyday comparison over the subject's formal apparatus.",
+    "Medium": "Assume general familiarity with the subject area but not with this specific idea. Use the subject's own conventions -- its notation, its vocabulary, its standard forms -- introducing each one before relying on it.",
+    "Hard": "Assume solid grounding. Move quickly, use the subject's precise terminology without re-deriving it, and include an edge case, an exception, or a trap that catches competent people.",
 }
+
+# THE SPECIFICITY RULE, and the single biggest lever on quality.
+#
+# Left to itself a model writes about a subject rather than teaching it: "greetings
+# vary by formality" instead of "use 'usted' with a stranger, 'tu' with a friend."
+# The first is a true sentence that teaches nothing, because a learner cannot do
+# anything with it. Every task that produces teaching material carries this.
+SPECIFIC_RULE = (
+    "Be specific, always. Name the actual thing rather than describing the category "
+    "it belongs to: real words, real numbers, real dates, real names, real moves, "
+    "real sentences the learner could say. A sentence that would still be true if "
+    "you swapped this concept for a different one is not teaching -- delete it and "
+    "write the concrete case instead. Never write a placeholder like 'a certain "
+    "value' or 'some greeting' where a real one belongs."
+)
+
+# The subject decides what a concept, an example and a question even ARE. The
+# prompts used to assume a quantitative subject throughout -- asking for a worked
+# case "with real numbers", which is nonsense for Spanish greetings or the causes
+# of a war. The model was forgiving enough to ignore it, but instructions that
+# only work because they are disregarded are not instructions.
+SUBJECT_RULE = "\n".join([
+    "First decide what KIND of subject this is, and let that shape everything:",
+    "  - a LANGUAGE -> concepts are things the learner can say or understand;"
+    " examples are real words and full sentences, with translations.",
+    "  - a QUANTITATIVE or FORMAL subject (maths, statistics, programming, logic)"
+    " -> examples are fully worked cases with real numbers, code or symbols,"
+    " carried through every step.",
+    "  - a HISTORICAL or FACTUAL subject -> examples are specific documented"
+    " events, people, dates and places, never a generic illustration.",
+    "  - a PRACTICAL SKILL (an instrument, a game, a craft) -> concepts are things"
+    " the learner can DO; examples are concrete situations naming the exact move,"
+    " fingering or step.",
+    "  - anything else -> pick the closest of the above and follow it.",
+    "Do not force a subject into a shape that does not fit it.",
+])
 
 JSON_RULE = (
     "Reply with a single JSON object and nothing else. "
@@ -107,11 +146,22 @@ def path_prompt(topic: str, goal: str, level: str, daily_time: int, n: int,
 
     lines += [
         "",
+        SUBJECT_RULE,
+        "",
         "Requirements:",
         f"  - Exactly {n} concepts, ordered so each depends only on the ones before it.",
-        "  - Name each concept the way a practitioner would, not as a chapter title.",
-        "  - Name them as specific ideas a person could study in one sitting.",
-        "    Avoid generic names like 'Introduction', 'Basics' or 'Advanced Topics'.",
+        "  - Each concept NAMES ITS OWN SUBJECT MATTER. A learner reading the name alone "
+        "must be able to tell what they will learn and how it differs from the others.",
+        "  - Name it the way a practitioner or teacher of THIS subject would, and make the "
+        "name specific to this subject -- if the same name could sit on a path for an "
+        "unrelated topic, it is too generic and must be rewritten.",
+        "  - BANNED, because they name a position in a sequence rather than any content: "
+        "'Introduction', 'Getting Started', 'Basics', 'Fundamentals', 'Core Concepts', "
+        "'Building Blocks', 'Key Principles', 'First Principles', 'Putting It Together', "
+        "'Advanced Topics', 'Going Further', 'Common Mistakes', 'Next Steps', 'Overview', "
+        "'Conclusion'. Name the actual material instead.",
+        "  - Sized to one sitting: narrow enough to teach properly in the time budget, "
+        "not a whole chapter compressed into a heading.",
     ]
     if not after:
         lines.append("  - The first concept must be genuinely approachable from zero.")
@@ -123,6 +173,8 @@ def path_prompt(topic: str, goal: str, level: str, daily_time: int, n: int,
         # schemas.path_schema for why the fields are gone entirely.
         "Report only the curriculum. Do not report progress, mastery or status: "
         "you have never seen this learner's work, so any such value would be invented.",
+        "",
+        SPECIFIC_RULE,
         "",
         DATA_RULE,
         JSON_RULE,
@@ -143,7 +195,7 @@ def lesson_prompt(topic: str, concept_name: str, level: str, minutes: int,
         else f"Teach the concept {fence(concept_name)} from the topic {fence(topic)}."
     )
 
-    lines = [opening, "", _level(level)]
+    lines = [opening, "", SUBJECT_RULE, "", _level(level)]
     # 90 words a minute is a reading-speed estimate, floored so a 1-minute
     # budget still yields a lesson rather than a sentence.
     lines.append(
@@ -162,10 +214,15 @@ def lesson_prompt(topic: str, concept_name: str, level: str, minutes: int,
         "",
         "Produce:",
         slide_rule,
-        "    The first states the idea in one sentence before elaborating.",
-        '  - Exactly one slide of kind "example", containing a fully worked concrete case with real numbers.',
-        '  - If two ideas are commonly confused here, include a slide of kind "contrast".',
-        "  - 3 short objectives, each starting with a verb.",
+        "    The first states the idea in one sentence a learner could repeat, then elaborates.",
+        '  - Exactly one slide of kind "example", carrying a single fully worked concrete case '
+        "in whatever form this subject's examples take -- real numbers worked through every "
+        "step, a real sentence with its translation, a specific documented event, an exact "
+        "sequence of moves. One case followed all the way through beats three gestured at.",
+        '  - If two things here are commonly confused with each other, include a slide of '
+        'kind "contrast" that puts them side by side and names the tell that distinguishes them.',
+        "  - 3 short objectives, each starting with a verb and naming something the learner "
+        "will be able to do with this specific material -- not 'understand the concept'.",
         f"  - Exactly {n_questions} question(s).",
     ]
 
@@ -205,6 +262,8 @@ def lesson_prompt(topic: str, concept_name: str, level: str, minutes: int,
         "right) and `hint` (a nudge that does not give the answer away). Use null only where a "
         "field genuinely does not apply to that question type.",
         "",
+        SPECIFIC_RULE,
+        "",
         DATA_RULE,
         JSON_RULE,
     ]
@@ -243,12 +302,21 @@ def questions_prompt(topic: str, concept_name: str, level: str, n: int,
         ]
     lines += [
         "",
-        "Test understanding, never recall of wording. Each question must be answerable from the concept alone.",
+        SUBJECT_RULE,
+        "",
+        "Test understanding, never recall of wording. Each question must be answerable from the "
+        "concept alone, and must be about THIS concept's actual material -- a question that "
+        "would work equally well for a different concept is testing nothing.",
+        "Ask about a concrete case wherever the subject allows one: give the learner an actual "
+        "sentence, number, position or situation and ask what follows from it, rather than "
+        "asking them to recite a definition.",
         "Every multiple-choice question has EXACTLY 4 options, and `correct_answer` must be one of "
         "them character for character.",
         "Give every question a unique id; ids must not repeat within this response.",
         "Every question needs `why` and `hint`. Short-answer questions need a `rubric` whose "
         "keywords are 3 to 5 SHORT distinctive terms of one or two words, never whole phrases.",
+        "",
+        SPECIFIC_RULE,
         "",
         DATA_RULE,
         JSON_RULE,
@@ -358,7 +426,9 @@ def hint_prompt(topic: str, concept_name: str, question_prompt: str,
         ]
     lines += [
         "",
-        "One or two sentences. Never state the final answer outright. Never say 'simply' or 'just'.",
+        "One or two sentences. Point at something specific in THIS question -- a particular "
+        "word, number or option -- rather than offering general advice that would fit any "
+        "question. Never state the final answer outright. Never say 'simply' or 'just'.",
         "",
         DATA_RULE,
         JSON_RULE,
@@ -378,8 +448,12 @@ def explain_prompt(topic: str, concept_name: str, prior_explanation: str, confus
         else "They did not say what lost them, so assume the framing itself was the problem.",
         "",
         "Explain it again from a genuinely different direction. If the first attempt was formal, "
-        "use a concrete story. If it was abstract, use numbers. Do not reuse its analogy or its "
-        "sentence shapes. Address their specific confusion in the first sentence. Under 120 words.",
+        "use a concrete story. If it was abstract, use a specific case worked through. If it "
+        "led with the rule, lead with an instance and let the rule fall out of it. Do not reuse "
+        "its analogy or its sentence shapes. Address their specific confusion in the first "
+        "sentence. Under 120 words.",
+        "",
+        SPECIFIC_RULE,
         "",
         DATA_RULE,
         JSON_RULE,
