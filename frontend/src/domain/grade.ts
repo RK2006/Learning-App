@@ -1,7 +1,7 @@
 import type { Question } from '../types/domain';
 
 /**
- * Local grading, and an honest third answer.
+ * What this device is allowed to decide, and the honest third answer.
  *
  * A verdict is `true`, `false`, or `null` meaning NOT GRADED. That third case
  * is the whole point of this module. The code it replaces read:
@@ -9,141 +9,88 @@ import type { Question } from '../types/domain';
  *   const correct = expected == null ? true : value === expected;
  *
  * under a comment claiming it recorded the answer "without claiming a verdict".
- * It claimed the best possible verdict. Short-answer questions carry no
- * `correctAnswer`, so every one of them was marked Correct the instant it was
- * submitted -- green footer, "Correct", combo incremented -- for any text at
- * all, including a single character. An adaptive learning app that tells you
- * you are right regardless of what you typed is worse than one that says
- * nothing, because it teaches you to trust it.
+ * It claimed the best possible verdict, so every short answer was marked
+ * Correct the instant it was submitted -- for any text at all, including a
+ * single character. An adaptive learning app that tells you you are right
+ * regardless of what you typed is worse than one that says nothing, because it
+ * teaches you to trust it.
+ *
+ * WHAT IS NO LONGER HERE, AND WHY. This module used to carry a keyword grader:
+ * `matchRubric`, a hand-rolled stemmer, and a rubric derived from the model
+ * answer's vocabulary. It graded every free-response answer in the session,
+ * and it failed in both directions at once:
+ *
+ *   "Conditioning changes the denominators"       -> marked WRONG
+ *        (the rubric said "conditional"/"denominator"; a plural missed)
+ *   "Hannibal captured many cities but not Rome"  -> marked RIGHT
+ *        (all three keywords present, and a bag of words cannot see "not")
+ *
+ * The stemmer fixed the first family and could never fix the second: negation
+ * is invisible to word matching, so a correct answer and its exact opposite
+ * score identically. Prose needs a reader, and there is exactly one reader in
+ * this system -- the model behind `/grade`. Every free-response verdict the
+ * learner sees now comes from it, and when it cannot be reached the answer is
+ * recorded UNGRADED rather than guessed at by counting words. A second,
+ * weaker grader standing in for the first is what produced "wrong during the
+ * lesson, right in the recap"; keeping one on the bench invites it back.
  */
 
-/** Words too common to be evidence of anything. */
-const STOP = new Set([
-  'the', 'a', 'an', 'and', 'or', 'but', 'if', 'then', 'is', 'are', 'was', 'were', 'be', 'been',
-  'of', 'to', 'in', 'on', 'at', 'for', 'with', 'that', 'this', 'it', 'its', 'as', 'by', 'from',
-  'you', 'your', 'we', 'i', 'they', 'not', 'no', 'can', 'will', 'would', 'so', 'do', 'does',
-]);
-
-function tokens(s: string): string[] {
-  return s
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-    .split(/\s+/)
-    .filter((w) => w.length > 1 && !STOP.has(w));
-}
-
 /**
- * A poor man's stemmer, and it is worth being clear about why it exists.
+ * Multiple choice, and multiple choice only.
  *
- * Exact token equality was rejecting ordinary English. A rubric keyword of
- * "denominator" did not match "denominators"; "greeting" did not match
- * "greetings"; "capture" did not match "captured". A learner wrote a correct
- * answer and was told it was wrong because of a plural.
- *
- * Prefix agreement past a short floor catches that whole family without the
- * cost of a real stemmer. The floor matters: without it "a" prefixes
- * everything, and at three "cat" would satisfy "category".
- *
- * WHAT THIS STILL CANNOT DO, and no amount of word matching ever will: read
- * negation. "Hannibal captured Rome" and "Hannibal did not capture Rome"
- * contain the same words and score identically here, and one of them is the
- * opposite of the other. That is not a bug to be tuned out -- it is the ceiling
- * of the technique, and it is precisely why grading moved to the model. This
- * function is now the FALLBACK for when the model cannot be reached, and the
- * UI says so whenever it is what produced a verdict.
- */
-function related(a: string, b: string): boolean {
-  if (a === b) return true;
-  const floor = 4;
-  if (a.length < floor || b.length < floor) return false;
-  const shorter = a.length <= b.length ? a : b;
-  const longer = a.length <= b.length ? b : a;
-  // Cap the overhang so "condition" does not satisfy "conditionalisation".
-  if (longer.length - shorter.length > 3) return false;
-  return longer.startsWith(shorter);
-}
-
-export interface RubricMatch {
-  found: string[];
-  missed: string[];
-  required: number;
-  passed: boolean;
-}
-
-/**
- * Keyword overlap, not comprehension.
- *
- * A keyword matches if it appears whole, or -- for multi-word keys -- if every
- * one of its significant words appears somewhere in the answer. Substring
- * matching would let "rate" satisfy "separate", so the comparison is on token
- * boundaries.
- *
- * This is deliberately coarse and the UI says so. It exists to keep the loop
- * honest until the backend can grade semantically; it is not pretending to be
- * that.
- */
-export function matchRubric(rubric: { keywords: string[]; required: number }, answer: string): RubricMatch {
-  const answerTokens = tokens(answer);
-  const found: string[] = [];
-  const missed: string[] = [];
-
-  for (const key of rubric.keywords) {
-    const parts = tokens(key);
-    const hit = parts.length > 0 && parts.every((p) => answerTokens.some((a) => related(a, p)));
-    (hit ? found : missed).push(key);
-  }
-
-  const required = Math.max(1, Math.min(rubric.required || 1, rubric.keywords.length));
-  return { found, missed, required, passed: found.length >= required };
-}
-
-/**
- * `null` means "we could not grade this" -- never "correct".
+ * Here the answer IS one of the options, so string equality is not an
+ * approximation of the right check -- it is the right check, instant and free,
+ * and incapable of disagreeing with the recap because the recap is handed this
+ * same verdict. A short answer's `correctAnswer` is a model answer in prose,
+ * and comparing a learner's sentence to it character by character marks every
+ * correct answer wrong, so anything that is not multiple choice returns `null`
+ * and must be sent to the grader instead.
  *
  * Callers must treat null as its own case: no combo, no correct-count, and a
  * neutral verdict in the UI.
  */
-export function gradeLocally(q: Question, answer: string): boolean | null {
+export function checkMultipleChoice(q: Question, answer: string): boolean | null {
+  if (q.type !== 'multipleChoice') return null;
   const value = answer.trim();
   if (value.length === 0) return false;
-
-  /**
-   * Exact match is for multiple choice ONLY.
-   *
-   * There the answer IS one of the options, so string equality is exactly
-   * right. A short answer's `correct_answer` is a model answer in prose --
-   * "The Punic Wars were significant for Rome's expansion as they led to the
-   * destruction of Carthage..." -- and comparing a learner's sentence to that
-   * character by character marks every correct answer wrong. Checking the key
-   * before the rubric (which is what this did) was the same bug as the old
-   * auto-correct, pointing the other way.
-   */
-  if (q.type === 'multipleChoice') {
-    if (q.correctAnswer == null) return null;
-    return value.localeCompare(q.correctAnswer.trim(), undefined, { sensitivity: 'base' }) === 0;
-  }
-
-  // Short answer: the rubric if the model gave us one...
-  if (q.rubric && q.rubric.keywords.length > 0) {
-    return matchRubric(q.rubric, value).passed;
-  }
-  // ...otherwise fall back to overlap with the model answer itself. Coarse, and
-  // labelled as such in the UI, but far closer to the truth than either
-  // "everything is right" or "nothing matches the prose exactly".
-  if (q.correctAnswer != null) {
-    return matchRubric(rubricFromModelAnswer(q.correctAnswer), value).passed;
-  }
-  return null;
+  if (q.correctAnswer == null) return null;
+  return value.localeCompare(q.correctAnswer.trim(), undefined, { sensitivity: 'base' }) === 0;
 }
 
 /**
- * Derive a rubric from a prose model answer.
+ * The mean of marks the learner has ALREADY BEEN SHOWN.
  *
- * Distinctive words only, and it asks for roughly half of them: a model answer
- * is one phrasing of a correct idea, not the only one, so demanding all of its
- * vocabulary would grade wording rather than understanding.
+ * The one number that cannot contradict them, and deliberately the same
+ * arithmetic the server does in `/assess` (backend/app/main.py) so a session
+ * scored here and a session scored there land on the same value. A second
+ * independent judgement over the same answers is exactly what produced "wrong
+ * during, right at the end" -- and no prompt wording fixes that, because the
+ * problem was having two graders at all rather than a badly behaved one.
+ *
+ * Questions that were never graded are not in `results`, so they do not pull
+ * the average down. Scoring an ungraded answer 0 would punish the learner for
+ * a grader we could not reach.
  */
-export function rubricFromModelAnswer(modelAnswer: string): { keywords: string[]; required: number } {
-  const keywords = Array.from(new Set(tokens(modelAnswer))).filter((w) => w.length > 3).slice(0, 8);
-  return { keywords, required: Math.max(1, Math.ceil(keywords.length / 2)) };
+export function meanScore(results: readonly { score: number }[]): number {
+  if (results.length === 0) return 0;
+  const sum = results.reduce((t, r) => t + Math.max(0, Math.min(100, Math.round(r.score))), 0);
+  return Math.round(sum / results.length);
+}
+
+/** Misconceptions as named by the grader that saw each answer, deduplicated,
+ *  order preserved. Same rule as the server's: carried through, never
+ *  re-derived from marks. */
+export function carriedMisconceptions(
+  results: readonly { misconception?: string | null }[],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const r of results) {
+    const m = (r.misconception ?? '').trim();
+    if (m && !seen.has(m.toLowerCase())) {
+      seen.add(m.toLowerCase());
+      out.push(m);
+    }
+  }
+  return out;
 }

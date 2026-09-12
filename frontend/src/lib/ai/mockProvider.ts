@@ -39,11 +39,12 @@ import type {
   TeachBackRequest,
 } from './contracts';
 import { AiError } from './contracts';
+import type { QuestionResult } from './contracts';
 import type { AssessmentResult, Concept, Lesson, Question } from '../../types/domain';
 import type { AssessmentResultWire, ConceptWire, LessonWire, QuestionWire } from '../../types/wire';
 import { toAssessment, toConcept, toLesson, toQuestion } from '../api/normalize';
 import { intBetween, pick, seededRng, shuffle } from '../rng';
-import { matchRubric, rubricFromModelAnswer } from '../../domain/grade';
+import { carriedMisconceptions, checkMultipleChoice, meanScore } from '../../domain/grade';
 import type { Rng } from '../rng';
 
 /* --------------------------------------------------------- simulation --- */
@@ -477,7 +478,10 @@ function buildQuestionWires(
         correct_answer: null,
         why: `A solid answer names the idea, states the condition under which it applies, and grounds it in a specific case.`,
         misconception_on_wrong: null,
-        // Offline grading is keyword overlap, not semantics. The UI says so.
+        // A real backend sends the rubric to the grader as CONTEXT -- ideas a good
+        // answer tends to contain, explicitly not a checklist. The simulator has no
+        // reader, so for it the rubric is all there is, and every verdict it gives
+        // says "Simulated" for exactly that reason.
         rubric: { keywords: built.keywords, required: 2 },
         hint: `Try finishing this sentence: "${concept} matters when..."`,
       });
@@ -550,48 +554,177 @@ function idPrefix(...parts: (string | number | boolean)[]): string {
   return `m${(h >>> 0).toString(36).slice(0, 5)}`;
 }
 
+/* ------------------------------------------------- the simulated grader --- */
+
+/*
+ * THE ONE GRADER IN THIS FILE, and it used to be two.
+ *
+ * `gradeAnswer` matched rubric keywords with a prefix-tolerant comparison and
+ * gave partial credit. `assessResponse` then re-graded the SAME answers with a
+ * completely different routine -- raw `includes()` with no stemming, and a hard
+ * zero for anything under fifteen characters -- and threw away the per-question
+ * results the client had already sent it. So the mock reproduced, exactly, the
+ * bug the live path was rebuilt to remove: told "Key ideas found" mid-lesson,
+ * then scored 0 in the recap for the same sentence, because a plural missed the
+ * second time or the answer was fourteen characters long.
+ *
+ * Now there is one simulated grader, one set of rules, and the recap AVERAGES
+ * what it already said instead of re-judging it -- which is what the real
+ * backend does with `question_results` (backend/app/main.py::assess).
+ *
+ * It still cannot read. Word matching is blind to negation, so "Hannibal did
+ * not capture Rome" and "Hannibal captured Rome" score the same here and always
+ * will. That is the ceiling of a simulator running with no model behind it,
+ * which is why every verdict it produces says "Simulated" in the text and the
+ * top bar carries the provider badge. Point the app at a real backend
+ * (VITE_API_MODE=live) and none of this code runs: prose goes to /grade, which
+ * reads.
+ */
+
+/** Words too common to be evidence of anything. */
+const STOP = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'if', 'then', 'is', 'are', 'was', 'were', 'be', 'been',
+  'of', 'to', 'in', 'on', 'at', 'for', 'with', 'that', 'this', 'it', 'its', 'as', 'by', 'from',
+  'you', 'your', 'we', 'i', 'they', 'not', 'no', 'can', 'will', 'would', 'so', 'do', 'does',
+]);
+
+function words(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !STOP.has(w));
+}
+
+/**
+ * A poor man's stemmer, so "denominator" accepts "denominators".
+ *
+ * Exact token equality rejected ordinary English: a plural or a past tense was
+ * enough to fail a correct answer. Prefix agreement past a short floor catches
+ * that family cheaply. The floor matters -- without it "a" prefixes everything,
+ * and at three "cat" would satisfy "category" -- and the overhang cap stops
+ * "condition" satisfying "conditionalisation".
+ */
+function related(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (a.length < 4 || b.length < 4) return false;
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  if (longer.length - shorter.length > 3) return false;
+  return longer.startsWith(shorter);
+}
+
+/** Distinctive words from a prose model answer, when the question carries no
+ *  rubric. Roughly half of them are asked for: a model answer is one phrasing
+ *  of a correct idea, not the only one. */
+function rubricFromModelAnswer(modelAnswer: string): { keywords: string[]; required: number } {
+  const keywords = Array.from(new Set(words(modelAnswer))).filter((w) => w.length > 3).slice(0, 8);
+  return { keywords, required: Math.max(1, Math.ceil(keywords.length / 2)) };
+}
+
+interface SimGrade {
+  score: number;
+  correct: boolean;
+  feedback: string;
+  misconception: string | null;
+}
+
+/**
+ * Grade ONE free-response answer the only way a simulator can: by looking for
+ * the ideas it was told to look for, and saying that is what it did.
+ *
+ * Every free-response mark the mock produces comes through here -- mid-session
+ * and, when there is no prior mark to average, in the recap too.
+ */
+function simulateFreeResponse(q: Question, answer: string): SimGrade {
+  const value = answer.trim();
+  if (!value) {
+    return { score: 0, correct: false, feedback: 'Nothing was submitted for this one.', misconception: null };
+  }
+
+  const rubric = q.rubric && q.rubric.keywords.length > 0
+    ? q.rubric
+    : rubricFromModelAnswer(q.correctAnswer ?? '');
+  if (rubric.keywords.length === 0) {
+    // No key and no rubric: word-matching has nothing to match against, and
+    // inventing a verdict is the bug this whole module exists to avoid.
+    return {
+      score: 0,
+      correct: false,
+      feedback: 'This one has no answer key, so the simulator cannot check it.',
+      misconception: null,
+    };
+  }
+
+  const answerWords = words(value);
+  const found: string[] = [];
+  const missed: string[] = [];
+  for (const key of rubric.keywords) {
+    const parts = words(key);
+    const hit = parts.length > 0 && parts.every((part) => answerWords.some((w) => related(w, part)));
+    (hit ? found : missed).push(key);
+  }
+
+  const required = Math.max(1, Math.min(rubric.required || 1, rubric.keywords.length));
+  const passed = found.length >= required;
+  const score = Math.round((found.length / rubric.keywords.length) * 100);
+  return {
+    score,
+    correct: passed,
+    feedback: passed
+      ? `Key ideas found: ${found.join(', ')}. (Simulated: this checks for words, not meaning.)`
+      : `Looked for ${missed.join(', ')} and did not find them. (Simulated: this checks for words, not meaning.)`,
+    misconception: null,
+  };
+}
+
+/** One question, one mark -- whichever kind it is. Multiple choice goes through
+ *  the same exact comparison the session uses, so the mock cannot disagree with
+ *  the screen either. */
+function simulateOne(q: Question, answer: string): SimGrade {
+  if (q.type !== 'multipleChoice') return simulateFreeResponse(q, answer);
+  const given = answer.trim();
+  const verdict = checkMultipleChoice(q, given);
+  return {
+    score: verdict === true ? 100 : 0,
+    correct: verdict === true,
+    feedback: verdict === true ? 'That is the right option.' : 'That is not the right option.',
+    misconception: verdict === false ? (q.misconceptionOnWrong?.[given] ?? null) : null,
+  };
+}
+
 /* -------------------------------------------------------------- assess --- */
 
 /**
- * Offline grading: exact match for multiple choice, rubric keyword overlap for
- * short answers.
+ * The recap SUMMARISES; it does not re-judge.
  *
- * Genuinely mediocre compared to a model, and the UI says so rather than
- * passing it off as comprehension. Crucially, the misconception it reports is
- * real -- it comes from `misconception_on_wrong` on the distractor the learner
- * actually picked, so the misconception log is not invented.
+ * When the session sends the marks it already showed, the score is their mean
+ * and the misconceptions are carried through -- the identical arithmetic
+ * `backend/app/main.py::assess` does, for the identical reason: a second
+ * opinion over the same answers is what produced "wrong during the lesson,
+ * right at the end". Only when there are no prior marks (a caller that never
+ * graded as it went) does this grade from scratch, and then it grades with the
+ * same simulated grader the session would have used.
  */
 function gradeLocally(req: AssessResponseRequest): AssessmentResultWire {
-  const questions = req.lesson.questions;
-  let earned = 0;
-  let possible = 0;
-  const misconceptions: string[] = [];
+  const prior = req.questionResults ?? [];
+  const marks: QuestionResult[] = prior.length
+    ? prior
+    : req.lesson.questions.map((q) => {
+        const given = (req.answers[q.id] ?? '').trim();
+        const g = simulateOne(q, given);
+        return {
+          questionId: q.id,
+          prompt: q.prompt,
+          answer: given,
+          score: g.score,
+          correct: g.correct,
+          misconception: g.misconception,
+        };
+      });
 
-  for (const q of questions) {
-    possible += 100;
-    const given = (req.answers[q.id] ?? '').trim();
-
-    if (q.type === 'multipleChoice') {
-      if (given && q.correctAnswer && given === q.correctAnswer) {
-        earned += 100;
-      } else if (given && q.misconceptionOnWrong?.[given]) {
-        misconceptions.push(q.misconceptionOnWrong[given]!);
-      }
-    } else {
-      const words = given.toLowerCase();
-      const kw = q.rubric?.keywords ?? [];
-      const need = Math.max(1, q.rubric?.required ?? 1);
-      const hits = kw.filter((k) => words.includes(k.toLowerCase())).length;
-      if (given.length < 15) {
-        earned += 0;
-      } else {
-        earned += Math.round(Math.min(1, hits / need) * 100);
-      }
-    }
-  }
-
-  const score = possible === 0 ? 0 : Math.round((earned / possible) * 100);
+  const score = meanScore(marks);
   const correct = score >= 70;
+  const misconceptions = carriedMisconceptions(marks);
 
   /**
    * Misconceptions are stated as their OWN sentence, never spliced into one.
@@ -689,51 +822,20 @@ export const mockProvider: AiProvider = {
   /**
    * The mock cannot read, and this is where that matters most.
    *
-   * The live grader judges meaning. This one can only compare words, which is
-   * exactly the mechanism that made the local grader wrong in both directions
-   * -- plurals missed, negation invisible. It is kept as CLOSE to honest as
-   * word-matching allows: a prefix match so "denominator" accepts
-   * "denominators", and partial credit in proportion to coverage rather than a
-   * pass/fail cliff.
+   * The live grader judges meaning. This one can only compare words -- plurals
+   * are handled, negation never will be. What it must NOT do is be a second
+   * grader: this is the same `simulateFreeResponse` the recap falls back on, so
+   * whatever it says here is what the recap averages, and the two can no longer
+   * contradict each other the way they did when each had its own rules.
    *
-   * It cannot see "not", and nothing here can. That is why the feedback names
-   * what it actually did -- looked for key ideas -- rather than claiming to
-   * have understood the answer. The UI's "Simulated" badge is the rest of that
-   * disclosure.
+   * The feedback names what it actually did -- looked for key ideas -- rather
+   * than claiming to have understood the answer. The UI's "Simulated" badge is
+   * the rest of that disclosure.
    */
   async gradeAnswer(req: GradeAnswerRequest, opts?: RequestOpts): Promise<GradeResult> {
     const rng = seededRng('grade', req.question.id, req.answer);
     await think(rng, 400, opts);
-
-    const answer = req.answer.trim();
-    if (!answer) {
-      return { score: 0, correct: false, feedback: 'Nothing was submitted for this one.', misconception: null };
-    }
-
-    const rubric = req.question.rubric?.keywords?.length
-      ? req.question.rubric
-      : rubricFromModelAnswer(req.question.correctAnswer ?? '');
-    if (!rubric.keywords.length) {
-      // No key and no rubric: word-matching has nothing to match against, and
-      // inventing a verdict is the bug this whole module exists to avoid.
-      return {
-        score: 0,
-        correct: false,
-        feedback: 'This one has no answer key, so the simulator cannot check it.',
-        misconception: null,
-      };
-    }
-
-    const m = matchRubric(rubric, answer);
-    const score = Math.round((m.found.length / Math.max(1, rubric.keywords.length)) * 100);
-    return {
-      score,
-      correct: m.passed,
-      feedback: m.passed
-        ? `Key ideas found: ${m.found.join(', ')}. (Simulated: this checks for words, not meaning.)`
-        : `Looked for ${m.missed.join(', ')} and did not find them. (Simulated: this checks for words, not meaning.)`,
-      misconception: null,
-    };
+    return simulateFreeResponse(req.question, req.answer);
   },
 
   async generateHint(req: GenerateHintRequest, opts?: RequestOpts): Promise<HintResult> {

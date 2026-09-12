@@ -416,7 +416,7 @@
  * antennae, and aligning the boxes puts the face noticeably low.
  *
  * Hidden below 640px: at that width the footer has to hold a verdict, the
- * rubric chips and a full-width button, and the moth is the one element here
+ * grader's note and a full-width button, and the moth is the one element here
  * that is not carrying information.
  */
 .verdictPica {
@@ -457,13 +457,6 @@
   font-size: var(--t-sm);
   color: var(--ink-2);
   max-width: 60ch;
-}
-
-.rubricChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-  margin-top: var(--s-3);
 }
 
 /* ------------------------------------------------------------ evaluating --- */
@@ -583,27 +576,6 @@
 
 .footer[data-verdict='ungraded'] .verdictLabel {
   color: var(--brand-ink);
-}
-
-.rubric {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  margin-top: var(--s-3);
-}
-
-.rubricNote {
-  font-size: var(--t-micro);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-3);
-}
-
-.rubricChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
 }
 
 /* ------------------------------------------------------- answer box --- */
@@ -772,10 +744,11 @@
   color: var(--ink-2, #55555f);
 }
 
-/* Marked visually when a fallback produced the verdict, because that verdict is
-   materially less trustworthy and the learner is entitled to know which grader
-   spoke. */
-.graderNote[data-source='local'] {
+/* Marked visually when there is NO verdict, because the grader could not be
+   reached. The note in this case is not a judgement of the answer -- it is the
+   reason the answer has not been judged -- and the learner is entitled to see
+   that at a glance rather than read it as a mark. */
+.graderNote[data-source='ungraded'] {
   padding: 8px 10px;
   border-radius: var(--radius-2, 10px);
   border-left: 3px solid var(--warn-border, #e0c069);

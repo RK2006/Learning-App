@@ -11,29 +11,32 @@ npm run build    # tsc -b && vite build
 npm run preview  # http://localhost:4173
 ```
 
-The app runs standalone. By default it drives every screen from a **simulated LLM provider** (`src/lib/ai/mockProvider.ts`) and needs no backend — which keeps `npm run dev` free and deterministic.
-
-### Talking to the real backend
-
-`mock` stays the default deliberately: live mode spends real tokens on every path, lesson and assessment, and a seeded mock is what makes a demo reproducible.
+**`npm run dev` talks to the real backend.** From the repo root, `./start_app.sh` starts both halves and wires the frontend to whichever port the backend actually got — use it unless you have a reason not to.
 
 ```bash
 # 1. put a key where the backend can find it (gitignored)
 cp ../backend/.env.example ../backend/.env && $EDITOR ../backend/.env
 
-# 2. terminal 1
-cd .. && .venv/bin/python backend/run.py        # :8000
-
-# 3. terminal 2
-VITE_API_MODE=live npm run dev
+# 2. both halves, ports negotiated, frontend pointed at the backend
+cd .. && ./start_app.sh
 ```
 
-Verified live against `gpt-4o-mini`: a path takes ~2s, a lesson ~12s, an assessment ~2s. Three of the eight AI tasks have endpoints (`/setup`, `/lesson`, `/assess`); the other five throw `unconfigured` naming the exact route to add — that list is the backend work order.
+Verified live against `gpt-4o-mini`: a path takes ~2s, a lesson ~12s, an assessment ~2s. All nine AI tasks have endpoints.
+
+### Running without a backend
+
+```bash
+VITE_API_MODE=mock npm run dev
+```
+
+`src/lib/ai/mockProvider.ts` is a seeded simulator: free, deterministic, offline, and it exercises the same wire mapping the real client does. The top bar shows a **Simulated** chip whenever it is in play.
+
+**It cannot read.** It marks free responses by matching rubric keywords, which is blind to negation — "Hannibal did not capture Rome" and "Hannibal captured Rome" score the same. That is the ceiling of a simulator with no model behind it, and it is why this is no longer the default: `mock` used to be what you got by forgetting an env var, so a demo could look like it was working while every lesson, path and grade was synthetic. Opting in to the simulator is cheap; opting in to the real thing by remembering a flag nobody told you about is not.
 
 | Env var | Default | Meaning |
 | --- | --- | --- |
-| `VITE_API_MODE` | `mock` | `live` routes through `httpProvider` to FastAPI |
-| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend origin |
+| `VITE_API_MODE` | `live` | `mock` routes through `mockProvider` instead of FastAPI |
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend origin. `start_app.sh` sets this to the port it actually bound |
 | `VITE_MOCK_FAIL_RATE` | `0` | `0`–`1`; fraction of mock calls that fail, for exercising error states |
 
 ## Architecture
@@ -91,7 +94,12 @@ src/
 - **Reduced motion is a degradation table, not a kill switch.** Most of the table is the collapsed duration ladder in `tokens.css` (`--d-3`…`--d-7` → 120ms, `--stagger` → 0). `base.css` adds only what tokens cannot express: `animation-iteration-count: 1` as a safety net, since an infinite animation is by definition decoration or an idle state. `--d-1`/`--d-2` are deliberately *not* collapsed — they drive the button press, which is feedback about something the user is doing with their own hand.
 - **No `setTimeout` inside `screens/`** — zero hits, no exceptions. Motion comes from a primitive or a token-driven class; a minimum-duration await goes through `lib/atLeast.ts`. A rule with one grandfathered exception stops being greppable, which is the only reason it is worth having.
 - **Nothing calls `Date.now()` outside `domain/time.ts`.** `now()` is the app clock and carries the demo offset; `wallClock()` is the real one, for measuring elapsed intervals and for the clock-tamper check (which must not fire when the demo clock moves).
-- **A verdict is `true`, `false`, or `null`.** `null` means *not graded* — no answer key and no rubric — and it is never a synonym for correct. The code this replaces collapsed it to `true`, so every short-answer question was marked Correct for any text at all. See `domain/grade.ts`.
+- **A verdict is `true`, `false`, or `null`.** `null` means *not graded* and is never a synonym for correct. The code this replaces collapsed it to `true`, so every short-answer question was marked Correct for any text at all. See `domain/grade.ts`.
+- **Nothing in `src/` grades prose.** `domain/grade.ts` checks multiple choice — where string equality *is* the right check — and nothing else. Free responses go to `/grade`, and if it cannot be reached the answer is recorded ungraded rather than guessed at by counting words: a keyword grader cannot see negation, so it marks an answer and its exact opposite the same, and it disagreed with the recap about the same sentence. The one keyword matcher left in the tree is inside `mockProvider.ts`, where there is no model to ask.
+  ```bash
+  grep -rn 'matchRubric\|rubricFromModelAnswer' src --include='*.ts' --include='*.tsx'
+  # mockProvider.ts only
+  ```
 - **Anything feeding the `useReducer` lazy initializer must be idempotent.** StrictMode calls it twice and keeps the SECOND result. `loadPersisted()` is not pure (quarantining deletes the bad key), so it is memoized per page load; without that the first call quarantined, the second saw an empty store, and the corrupt-save warning was discarded every single time.
 - **The reducer is pure.** No clock, no RNG, no storage. Impure values arrive on action payloads built in `state/actions.ts`. That is what makes StrictMode's double-invoke harmless and lets `state/demoData.ts` generate a fortnight of history by replaying real sessions through the real `buildCommit` with nothing but `at` changed.
 

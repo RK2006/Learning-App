@@ -234,8 +234,22 @@ Verified: 360px with no overflow on any of seven screens, exactly two things loo
 
 Still scripted, and labelled as such in the UI:
 
-- **The instant check after each question is local** — exact match for multiple choice, rubric-keyword overlap for short answers. The *score* comes from the real `/assess`. The UI says which is which rather than implying the keyword check is comprehension.
+- ~~**The instant check after each question is local** — exact match for multiple choice, rubric-keyword overlap for short answers.~~ — **Retired.** See "One grader for prose" below: keyword overlap no longer grades free responses anywhere, on any path.
 - **Five of the eight AI tasks have no endpoint.** `lib/ai/httpProvider.ts` throws `unconfigured` naming the exact route each one needs. That list is the backend work order.
+
+### One grader for prose
+
+`POST /grade` was added so free responses were marked by a model mid-session instead of by keyword overlap. What that commit left behind was a second grader on the bench, and two places still reaching for it:
+
+- **`SessionScreen`'s catch block** fell back to `domain/grade.ts` whenever `/grade` failed. A fallback is not a smaller version of a broken grader — it is the same grader, reached on the days the network is worst. It cannot see negation, so "Hannibal did not capture Rome" and "Hannibal captured Rome" still scored identically, and it disagreed with the recap about the same sentence.
+- **The mock provider graded twice, with different rules.** `gradeAnswer` matched rubric keywords with prefix tolerance and gave partial credit; `assessResponse` then threw away the `questionResults` it had been sent and re-graded the same answers with raw `includes()`, no stemming, and a hard zero for anything under fifteen characters. So the default `npm run dev` demo reproduced the original bug exactly: "Key ideas found" during the lesson, 0% in the recap.
+
+Now:
+
+- **`domain/grade.ts` cannot grade prose at all.** `matchRubric`, the stemmer and `rubricFromModelAnswer` are gone from it; what remains is `checkMultipleChoice` (where string equality *is* the right check), plus `meanScore` and `carriedMisconceptions` — the same arithmetic `backend/app/main.py::assess` does, so an offline recap and an online one land on the same number.
+- **An unreachable grader produces no verdict.** The answer is recorded ungraded: saved, excluded from the score, no combo broken, no heart lost, and the footer says why. `correct: null` was already modelled end to end; it just was not being used.
+- **The mock has one simulated grader.** `simulateFreeResponse` marks every free response it marks, and `assessResponse` averages the marks already shown rather than re-judging them. It still cannot read — word matching never will — which is why its feedback says "Simulated" and the top bar carries the provider badge.
+- **A session where nothing could be marked does not write a zero.** `buildCommit` takes `unscored`, and treats such a session like practice: XP, history, streak and the day stat all commit, while mastery, `bestScore`, `scoreHistory` and the review schedule are left exactly where they were. Dropping someone's mastery to zero because the grader was down is a worse failure than the lost session that commit path was written to prevent.
 
 ## Requested UX change implemented
 

@@ -49,6 +49,22 @@ export interface SessionOutcome {
   correct: number;
   total: number;
   hintsUsed: number;
+  /**
+   * True when NOT ONE answer in the session received a mark.
+   *
+   * Only reachable when the grader was unreachable for every question and the
+   * recap could not be reached either, so `assessment.score` is 0 for want of
+   * anything to average -- not because the learner scored 0.
+   *
+   * The session still commits: XP for the time spent, the day stat, the streak,
+   * the history entry. What must NOT happen is writing that 0 into mastery,
+   * `bestScore`, `scoreHistory` or the review schedule, because every one of
+   * those is a claim about how well the learner knows the concept, and nothing
+   * in this session found that out. Tanking someone's mastery for our outage is
+   * a worse failure than the lost session this commit path was written to
+   * prevent.
+   */
+  unscored?: boolean;
 }
 
 /**
@@ -75,6 +91,9 @@ export function buildCommit(state: AppState, outcome: SessionOutcome, at: number
 
   const score = outcome.assessment.score;
   const isPractice = outcome.mode === 'practice';
+  // Practice is free by design; an unscored session is free because there is no
+  // score to spend. Both leave mastery and scheduling exactly where they were.
+  const leavesMasteryAlone = isPractice || outcome.unscored === true;
 
   const masteryBefore: Record<string, number> = {};
   const masteryAfter: Record<string, number> = {};
@@ -93,7 +112,7 @@ export function buildCommit(state: AppState, outcome: SessionOutcome, at: number
     if (!hasAttempted(c)) anyFirstTime = true;
     if (isDue(c, today)) anyWasDue = true;
 
-    if (isPractice) {
+    if (leavesMasteryAlone) {
       masteryAfter[c.id] = before;
       return { ...c, attempts: c.attempts + 1 };
     }

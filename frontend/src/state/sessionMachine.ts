@@ -41,24 +41,33 @@ export interface SessionState {
   /** The grader's one-line note on the answer just submitted. */
   lastFeedback: string | null;
   /**
-   * Which grader produced `lastCorrect`.
+   * Which grader produced `lastCorrect` -- and there are only two, plus the
+   * case where nobody did.
    *
-   * 'model'  -- graded on meaning.
-   * 'exact'  -- multiple choice, compared against the option. Not an
-   *             approximation of the right check; it IS the right check.
-   * 'local'  -- the offline keyword fallback, because the grader was
-   *             unreachable. The UI must SAY so: it cannot see negation, so
-   *             "did not capture Rome" and "captured Rome" score the same, and
-   *             presenting that as a considered verdict would be a lie.
+   * 'model'    -- read by the grader. EVERY free-response verdict is this one.
+   * 'exact'    -- multiple choice, compared against the option. Not an
+   *               approximation of the right check; it IS the right check.
+   * 'ungraded' -- the grader could not be reached, so there is no verdict and
+   *               `lastCorrect` is null. This replaces a keyword fallback that
+   *               graded prose on this device: it could not see negation, so
+   *               "did not capture Rome" and "captured Rome" scored the same,
+   *               and it disagreed with the recap about the same sentence.
+   *               Saying nothing is the honest answer, and it costs the
+   *               learner nothing -- an ungraded answer is left out of the
+   *               score rather than counted wrong.
    */
-  lastGradedBy: 'model' | 'exact' | 'local' | null;
+  lastGradedBy: 'model' | 'exact' | 'ungraded' | null;
   /**
    * Every verdict this session, in order.
    *
-   * Sent to /assess so the recap SUMMARISES rather than re-judges. Without it
-   * the session graded by keyword and the recap graded by meaning, and a
-   * learner was told they were wrong mid-lesson and right at the end about the
-   * same sentence.
+   * Sent to /assess so the recap SUMMARISES rather than re-judges, and
+   * averaged into the offline score by the same arithmetic the server uses.
+   * Without it the session graded by keyword and the recap graded by meaning,
+   * and a learner was told they were wrong mid-lesson and right at the end
+   * about the same sentence.
+   *
+   * An UNGRADED answer is absent from this list, which is what keeps it out of
+   * the score in both places rather than scoring it zero.
    */
   results: QuestionResult[];
   correctCount: number;
@@ -115,7 +124,7 @@ export type SessionAction =
         score?: number;
         feedback?: string | null;
         misconception?: string | null;
-        gradedBy?: 'model' | 'exact' | 'local';
+        gradedBy?: 'model' | 'exact' | 'ungraded';
       };
     }
   | { type: 'SKIP' }
@@ -125,9 +134,10 @@ export type SessionAction =
       payload: {
         assessment: AssessmentResult;
         /** True when /assess could not be reached and the score came from the
-         *  local check instead. The results screen must say so -- a score
-         *  presented as a model's judgement when it is a keyword tally is
-         *  exactly the kind of quiet lie this app exists to remove. */
+         *  average of the marks already shown instead. The results screen must
+         *  say so -- a score presented as a model's considered judgement when
+         *  nothing considered it is exactly the kind of quiet lie this app
+         *  exists to remove. */
         gradedLocally?: boolean;
         /** Why the model grade is missing, for the banner. */
         gradingError?: string | null;
@@ -310,6 +320,11 @@ export function sessionReducer(s: SessionState, a: SessionAction): SessionState 
     case 'SKIP': {
       const q = currentQuestion(s);
       if (!q) return s;
+      // A skip is a verdict, so it belongs in `results` like any other: the
+      // learner declined to answer, which is a 0, not an absence. Leaving it
+      // out would quietly EXCLUDE it from the mean -- the treatment reserved
+      // for answers we could not grade -- and make skipping everything score
+      // better than answering badly.
       return {
         ...s,
         stage: 'feedback',
@@ -318,6 +333,10 @@ export function sessionReducer(s: SessionState, a: SessionAction): SessionState 
         combo: 0,
         skipsUsed: s.skipsUsed + 1,
         answers: { ...s.answers, [q.id]: '' },
+        results: [
+          ...s.results,
+          { questionId: q.id, prompt: q.prompt, answer: '', score: 0, correct: false, misconception: null },
+        ],
       };
     }
 

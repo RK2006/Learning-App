@@ -25,10 +25,11 @@ import { playCue } from '../lib/sound';
 import { describeAiError } from '../lib/ai/errorCopy';
 import { AiError } from '../lib/ai/contracts';
 import { now } from '../domain/time';
-import { gradeLocally, matchRubric, rubricFromModelAnswer } from '../domain/grade';
+import { carriedMisconceptions, checkMultipleChoice, meanScore } from '../domain/grade';
 import { ROUTES } from '../router/routes';
 import { parseMode, parseQueue } from '../router/session';
 import type { AssessmentResult, SessionMode } from '../types/domain';
+import type { QuestionResult } from '../lib/ai/contracts';
 import { ResultsPanel } from './ResultsPanel';
 import { TeachBack } from '../components/TeachBack/TeachBack';
 import s from './SessionScreen.module.css';
@@ -46,16 +47,6 @@ import s from './SessionScreen.module.css';
  */
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-/**
- * The grade when /assess could not be reached.
- *
- * Derived only from questions this client actually graded -- exact match for
- * multiple choice, rubric overlap for short answers -- and it says so, both in
- * `feedback` and through the banner on the results screen. It reports NO
- * misconceptions, because finding those is exactly the part a local check
- * cannot do, and inventing one would be the same lie as the hardcoded
- * "Confuses P(A|B) with P(B|A)" this project deleted from the backend.
- */
 /** Beyond this many questions, segments stop being readable and the bar
  *  switches to a window plus a count. 20 segments at 360px is ~12px each,
  *  about the floor for something that needs a gap beside it. */
@@ -68,17 +59,58 @@ function segWindow(index: number, total: number, size = SEG_MAX): number[] {
   return Array.from({ length: Math.min(size, total) }, (_, i) => start + i);
 }
 
-function localAssessment(correct: number, total: number): AssessmentResult {
-  const score = total === 0 ? 0 : Math.round((correct / total) * 100);
+/**
+ * The grade when /assess could not be reached.
+ *
+ * NOT a second opinion -- an average of the marks the learner was already
+ * shown, which is the identical arithmetic the server does when it has the
+ * per-question results (backend/app/main.py::assess). So an offline recap and
+ * an online one land on the same number for the same session, and neither can
+ * contradict a verdict already on screen.
+ *
+ * It counts only the questions that HAVE a mark. A free response the grader
+ * could not read is absent from `results`, so it neither scores 0 nor is
+ * silently guessed at by word-matching; the copy says how many were left out.
+ *
+ * Misconceptions are carried through from the per-question marks, exactly as
+ * the server carries them -- each was named by the grader that read that one
+ * answer. Nothing here invents one, which is the lie the hardcoded
+ * "Confuses P(A|B) with P(B|A)" told before it was deleted from the backend.
+ */
+function localAssessment(results: QuestionResult[], total: number): AssessmentResult {
+  const score = meanScore(results);
+  const marked = results.length;
+  const unmarked = Math.max(0, total - marked);
+
+  // Nothing was marked, so there is nothing to average. The 0 below is the
+  // absence of a score, not a score of zero -- buildCommit is told as much via
+  // `unscored`, so it leaves mastery and the review schedule untouched.
+  if (marked === 0) {
+    return {
+      score: 0,
+      correct: false,
+      needsReview: false,
+      misconceptions: [],
+      feedback:
+        `None of your answers could be marked — the grader could not be reached for any of them. ` +
+        `Your answers and your time are saved, and this session has been left out of your mastery ` +
+        `and your review schedule rather than counted as a zero. Worth another run once you are back online.`,
+    };
+  }
+
   return {
     score,
     correct: score >= 70,
     needsReview: score < 70,
-    misconceptions: [],
+    misconceptions: carriedMisconceptions(results),
     feedback:
-      `Scored on this device from the ${total} question${total === 1 ? '' : 's'} checked as you went, ` +
-      `because the full assessment could not be reached. Your progress is saved. ` +
-      `The written feedback and any misconceptions are the parts that need the model, so they are missing here.`,
+      `Averaged on this device from the ${marked} question${marked === 1 ? '' : 's'} already marked ` +
+      `as you went, because the written recap could not be reached. Your progress is saved.` +
+      (unmarked > 0
+        ? ` ${unmarked} answer${unmarked === 1 ? ' could not be' : 's could not be'} marked at all, ` +
+          `so ${unmarked === 1 ? 'it is' : 'they are'} left out rather than counted as wrong.`
+        : '') +
+      ` The written feedback is the part that needs the model, so it is missing here.`,
   };
 }
 
@@ -340,7 +372,7 @@ export function SessionScreen() {
       }
 
       const total = questionCount(st);
-      const graded = assessment ?? localAssessment(st.correctCount, total);
+      const graded = assessment ?? localAssessment(st.results, total);
 
       // Outside the try, and unconditional. This is the change.
       dispatch(
@@ -354,6 +386,10 @@ export function SessionScreen() {
           correct: st.correctCount,
           total,
           hintsUsed: st.hintsUsed,
+          // Only when the recap AND every per-question grade were unreachable.
+          // A model-written recap is a real score even with no per-question
+          // marks behind it, so this is false whenever `assessment` arrived.
+          unscored: assessment == null && st.results.length === 0,
         }),
       );
 
@@ -417,22 +453,14 @@ export function SessionScreen() {
 
   const q = currentQuestion(st);
   const total = questionCount(st);
-  // Computed for the feedback stage only: which rubric keys the answer hit.
-  const rubric =
-    st.stage === 'feedback' && q && q.type === 'shortAnswer'
-      ? matchRubric(
-          q.rubric && q.rubric.keywords.length > 0 ? q.rubric : rubricFromModelAnswer(q.correctAnswer ?? ''),
-          st.answers[q.id] ?? '',
-        )
-      : null;
   const slides = st.lesson?.slides ?? [];
 
   /**
-   * MULTIPLE CHOICE IS CHECKED HERE. PROSE IS SENT TO THE GRADER.
+   * MULTIPLE CHOICE IS CHECKED HERE. PROSE IS SENT TO THE GRADER. ALWAYS.
    *
    * The split is the fix for "wrong during the lesson, right in the recap".
    * Both verdicts were real; they came from different graders. The session
-   * asked domain/grade.ts, which matches rubric keywords on token boundaries,
+   * asked domain/grade.ts, which matched rubric keywords on token boundaries,
    * and the recap asked a model, which reads. Word matching fails in both
    * directions at once:
    *
@@ -442,7 +470,10 @@ export function SessionScreen() {
    *        (all three keywords present, and a bag of words cannot see "not")
    *
    * No tuning fixes that. Negation is invisible to the technique, so a correct
-   * answer and its exact opposite score identically. Prose needs a reader.
+   * answer and its exact opposite score identically. Prose needs a reader, and
+   * there is ONE reader -- so there is now no path, including the failure path,
+   * on which a free-response verdict comes from anything but the grader. See
+   * the catch below for what happens instead when it cannot be reached.
    *
    * Multiple choice deliberately does NOT go to the model: the answer IS one of
    * the options, so comparison is not an approximation of the right check, it
@@ -454,7 +485,7 @@ export function SessionScreen() {
 
     if (q.type === 'multipleChoice') {
       const value = st.selected ?? '';
-      const verdict = gradeLocally(q, value);
+      const verdict = checkMultipleChoice(q, value);
       playCue(verdict === true ? 'correct' : verdict === false ? 'incorrect' : 'ungraded');
       send({
         type: 'CHECK',
@@ -496,22 +527,29 @@ export function SessionScreen() {
     } catch (e) {
       if (ctrl.signal.aborted) return;
       /**
-       * The grader is unreachable, so fall back to keyword matching -- and SAY
-       * SO, because it is a materially worse verdict and the learner is about
-       * to be told they were wrong by something that cannot read.
+       * The grader is unreachable, so THERE IS NO VERDICT. The answer is
+       * recorded ungraded: no mark, no combo change, no heart lost, and it is
+       * left out of the score entirely rather than counted as wrong.
        *
-       * Falling back silently would be the same lie in a new place: the whole
-       * complaint was two graders disagreeing without either admitting which
-       * one was speaking.
+       * This used to fall back to keyword matching on this device. That is the
+       * grader this whole change exists to remove, and a fallback is not a
+       * smaller version of it -- it is the same grader, reached on the days the
+       * network is worst, telling a learner they were wrong when a plural
+       * missed or telling them they were right when they wrote "not". Reaching
+       * for it only on failure makes it rarer, not less wrong, and it puts the
+       * two disagreeing graders back in the same session.
+       *
+       * Saying nothing is a real answer here. The machine already models it
+       * (`correct: null`), the footer already renders it, and nothing about the
+       * learner's progress is lost: the session still commits.
        */
-      const verdict = gradeLocally(q, value);
-      playCue(verdict === true ? 'correct' : verdict === false ? 'incorrect' : 'ungraded');
+      playCue('ungraded');
       send({
         type: 'CHECK',
         payload: {
-          correct: verdict,
-          feedback: `${describeAiError(e).title} — checked for key words on this device instead, which cannot judge meaning.`,
-          gradedBy: 'local',
+          correct: null,
+          feedback: `${describeAiError(e).title} — this answer was saved but not marked, and it does not count against you.`,
+          gradedBy: 'ungraded',
         },
       });
     }
@@ -998,19 +1036,36 @@ export function SessionScreen() {
         {st.stage === 'results' && st.assessment && (
           <>
             {/*
-              Says out loud that this score did not come from the model.
+              Says out loud that this number was not written by the model.
 
               The session is committed either way now, which is the fix for
-              losing a completed run to an /assess timeout. But a keyword tally
-              presented as a model's judgement would be the same class of lie
-              as the hardcoded 75% this project deleted -- so the banner is not
-              optional, it is the thing that makes committing anyway honest.
+              losing a completed run to an /assess timeout. But an average
+              presented as a model's considered judgement would be the same
+              class of lie as the hardcoded 75% this project deleted -- so the
+              banner is not optional, it is the thing that makes committing
+              anyway honest.
+
+              Two different situations, and they are not interchangeable: an
+              average of real marks is a real score; no marks at all is no score,
+              and that session deliberately does not touch mastery.
             */}
             {st.gradedLocally && (
               <div className={s.localGrade} role="status">
-                <strong>Scored on this device.</strong> {st.gradingError ?? 'The full assessment could not be reached'} —
-                so this score counts only the questions checked as you went, and there is no written
-                feedback or misconception analysis. Your progress was saved.
+                {st.results.length === 0 ? (
+                  <>
+                    <strong>Not scored.</strong> {st.gradingError ?? 'The grader could not be reached'} — and
+                    no answer in this session was marked, so there is nothing to score. Your answers and
+                    your time were saved, and your mastery and review schedule were left alone rather than
+                    dropped to zero.
+                  </>
+                ) : (
+                  <>
+                    <strong>Averaged on this device.</strong>{' '}
+                    {st.gradingError ?? 'The written recap could not be reached'} — so this is the mean of
+                    the {st.results.length} mark{st.results.length === 1 ? '' : 's'} you were already shown,
+                    with no written feedback. Your progress was saved.
+                  </>
+                )}
               </div>
             )}
             <ResultsPanel
@@ -1078,35 +1133,11 @@ export function SessionScreen() {
                 {/* The grader's own sentence about THIS answer. Previously the
                     only thing shown for a short answer was a keyword tally,
                     which is what a reader was left to argue with when the recap
-                    later disagreed. */}
+                    later disagreed. When `data-source` is 'ungraded' this is
+                    not a verdict at all -- it is why there isn't one. */}
                 {st.lastFeedback && (
                   <div className={s.graderNote} data-source={st.lastGradedBy ?? undefined}>
                     {st.lastFeedback}
-                  </div>
-                )}
-
-                {/* Shown ONLY when the keyword fallback produced the verdict.
-                    It cannot see negation, so it is capable of marking an
-                    answer and its exact opposite the same -- presenting that
-                    as a considered judgement would be the original bug wearing
-                    a different hat. */}
-                {st.lastGradedBy === 'local' && rubric && (
-                  <div className={s.rubric}>
-                    <span className={s.rubricNote}>
-                      Checked on this device — key words only ({rubric.found.length}/{rubric.required})
-                    </span>
-                    <span className={s.rubricChips}>
-                      {rubric.found.map((k) => (
-                        <Chip key={k} tone="go">
-                          ✓ {k}
-                        </Chip>
-                      ))}
-                      {rubric.missed.map((k) => (
-                        <Chip key={k} tone="neutral">
-                          {k}
-                        </Chip>
-                      ))}
-                    </span>
                   </div>
                 )}
 
@@ -1118,8 +1149,11 @@ export function SessionScreen() {
                 )}
                 {st.lastCorrect === null && (
                   <div className={s.verdictWhy}>
-                    This one has no answer key, so it was recorded without being scored — and it
-                    does not count against you.
+                    {st.lastGradedBy === 'ungraded'
+                      ? 'Your answer is saved. It was not marked, so it is left out of your score ' +
+                        'rather than counted as wrong — nothing on this device guesses at prose.'
+                      : 'This one has no answer key, so it was recorded without being scored — and it ' +
+                        'does not count against you.'}
                   </div>
                 )}
                 {st.lastCorrect === true && q.why && <div className={s.verdictWhy}>{q.why}</div>}
