@@ -92,6 +92,52 @@ export interface AssessResponseRequest {
   lesson: Lesson;
   /** questionId -> the learner's answer. */
   answers: Record<string, string>;
+  /**
+   * The verdict already reached for each question, as it was answered.
+   *
+   * THIS IS WHAT KEEPS THE TWO NUMBERS HONEST. With these, the server computes
+   * the overall score as their mean and the model writes only the narrative --
+   * so the recap cannot contradict a verdict the learner was already shown.
+   * Without them (an older client) the model grades from scratch, which is what
+   * produced "Not quite" during the lesson and a pass at the end.
+   */
+  questionResults?: QuestionResult[];
+}
+
+export interface QuestionResult {
+  questionId: string;
+  prompt: string;
+  answer: string;
+  score: number;
+  correct: boolean;
+  /** Named by the grader that saw THIS answer against its model answer. The
+   *  recap carries these through rather than re-deriving them from marks. */
+  misconception?: string | null;
+}
+
+/**
+ * Grade ONE free-response answer, while the learner is still looking at it.
+ *
+ * Multiple choice deliberately never comes here: the answer IS one of the
+ * options, so exact comparison is not an approximation of the right check, it
+ * IS the right check -- instant, free, and incapable of disagreeing with
+ * itself. Only prose needs a reader.
+ */
+export interface GradeAnswerRequest {
+  topic: string;
+  conceptName: string;
+  question: Question;
+  answer: string;
+}
+
+export interface GradeResult {
+  /** 0..100 for this one answer. Partial credit is real. */
+  score: number;
+  correct: boolean;
+  /** One sentence, shown inline under the verdict. */
+  feedback: string;
+  /** A specific misunderstanding this answer reveals, or null. */
+  misconception: string | null;
 }
 
 export interface GenerateHintRequest {
@@ -231,6 +277,9 @@ export interface AiProvider {
   generateLesson(req: GenerateLessonRequest, opts?: RequestOpts): Promise<Lesson>;
   generateQuestions(req: GenerateQuestionsRequest, opts?: RequestOpts): Promise<Question[]>;
   assessResponse(req: AssessResponseRequest, opts?: RequestOpts): Promise<AssessmentResult>;
+  /** Grades a single free-response answer mid-session, so the verdict shown
+   *  during the lesson is the same judgement that reaches the recap. */
+  gradeAnswer(req: GradeAnswerRequest, opts?: RequestOpts): Promise<GradeResult>;
   generateHint(req: GenerateHintRequest, opts?: RequestOpts): Promise<HintResult>;
   explainDifferently(req: ExplainDifferentlyRequest, opts?: RequestOpts): Promise<string>;
   analyzeTeachBack(req: TeachBackRequest, opts?: RequestOpts): Promise<TeachBackAnalysis>;

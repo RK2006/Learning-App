@@ -763,3 +763,22 @@
   line-height: 1.5;
   text-align: left;
 }
+
+/* The grader's one-line note on the answer just submitted. */
+.graderNote {
+  margin-top: 6px;
+  line-height: 1.5;
+  font-size: 0.88rem;
+  color: var(--ink-2, #55555f);
+}
+
+/* Marked visually when a fallback produced the verdict, because that verdict is
+   materially less trustworthy and the learner is entitled to know which grader
+   spoke. */
+.graderNote[data-source='local'] {
+  padding: 8px 10px;
+  border-radius: var(--radius-2, 10px);
+  border-left: 3px solid var(--warn-border, #e0c069);
+  background: var(--warn-bg, #fdf6e3);
+  color: var(--warn-ink, #7a5c12);
+}

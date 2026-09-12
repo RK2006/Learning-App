@@ -29,6 +29,8 @@ import type {
   GeneratePathRequest,
   GenerateQuestionsRequest,
   ExtendPathRequest,
+  GradeAnswerRequest,
+  GradeResult,
   HintResult,
   NextRecommendation,
   RecommendNextRequest,
@@ -41,6 +43,7 @@ import type { AssessmentResult, Concept, Lesson, Question } from '../../types/do
 import type { AssessmentResultWire, ConceptWire, LessonWire, QuestionWire } from '../../types/wire';
 import { toAssessment, toConcept, toLesson, toQuestion } from '../api/normalize';
 import { intBetween, pick, seededRng, shuffle } from '../rng';
+import { matchRubric, rubricFromModelAnswer } from '../../domain/grade';
 import type { Rng } from '../rng';
 
 /* --------------------------------------------------------- simulation --- */
@@ -683,6 +686,56 @@ export const mockProvider: AiProvider = {
    * exact failure the real endpoint avoids by being sent `priorHints`, and the
    * mock is only useful if it demonstrates the same property.
    */
+  /**
+   * The mock cannot read, and this is where that matters most.
+   *
+   * The live grader judges meaning. This one can only compare words, which is
+   * exactly the mechanism that made the local grader wrong in both directions
+   * -- plurals missed, negation invisible. It is kept as CLOSE to honest as
+   * word-matching allows: a prefix match so "denominator" accepts
+   * "denominators", and partial credit in proportion to coverage rather than a
+   * pass/fail cliff.
+   *
+   * It cannot see "not", and nothing here can. That is why the feedback names
+   * what it actually did -- looked for key ideas -- rather than claiming to
+   * have understood the answer. The UI's "Simulated" badge is the rest of that
+   * disclosure.
+   */
+  async gradeAnswer(req: GradeAnswerRequest, opts?: RequestOpts): Promise<GradeResult> {
+    const rng = seededRng('grade', req.question.id, req.answer);
+    await think(rng, 400, opts);
+
+    const answer = req.answer.trim();
+    if (!answer) {
+      return { score: 0, correct: false, feedback: 'Nothing was submitted for this one.', misconception: null };
+    }
+
+    const rubric = req.question.rubric?.keywords?.length
+      ? req.question.rubric
+      : rubricFromModelAnswer(req.question.correctAnswer ?? '');
+    if (!rubric.keywords.length) {
+      // No key and no rubric: word-matching has nothing to match against, and
+      // inventing a verdict is the bug this whole module exists to avoid.
+      return {
+        score: 0,
+        correct: false,
+        feedback: 'This one has no answer key, so the simulator cannot check it.',
+        misconception: null,
+      };
+    }
+
+    const m = matchRubric(rubric, answer);
+    const score = Math.round((m.found.length / Math.max(1, rubric.keywords.length)) * 100);
+    return {
+      score,
+      correct: m.passed,
+      feedback: m.passed
+        ? `Key ideas found: ${m.found.join(', ')}. (Simulated: this checks for words, not meaning.)`
+        : `Looked for ${m.missed.join(', ')} and did not find them. (Simulated: this checks for words, not meaning.)`,
+      misconception: null,
+    };
+  },
+
   async generateHint(req: GenerateHintRequest, opts?: RequestOpts): Promise<HintResult> {
     const rng = seededRng('hint', req.question.id, req.level);
     await think(rng, 350, opts);

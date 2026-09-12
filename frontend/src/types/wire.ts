@@ -93,6 +93,34 @@ export interface QuestionsResponseWire {
   questions: QuestionWire[];
 }
 
+/** POST /grade. One free-response answer, graded by the model mid-session. */
+export interface GradeRequestWire {
+  topic: string;
+  concept_name: string;
+  question_prompt: string;
+  model_answer: string;
+  rubric_keywords: string[];
+  answer: string;
+}
+
+export interface GradeResponseWire {
+  score: number;
+  correct: boolean;
+  feedback: string;
+  misconception?: string | null;
+}
+
+/** A verdict already reached, sent back with the session so the recap can
+ *  summarise rather than re-judge. */
+export interface QuestionResultWire {
+  question_id: string;
+  prompt: string;
+  answer: string;
+  score: number;
+  correct: boolean;
+  misconception?: string | null;
+}
+
 /** POST /hint. `level` is a number, not 1|2|3 -- see contracts.ts. */
 export interface HintRequestWire {
   topic: string;
@@ -250,4 +278,7 @@ export interface AssessRequestWire {
   concept_name: string;
   answers: Record<string, string>;
   lesson: LessonWire;
+  /** Optional and additive: an older client omits them and the server grades
+   *  from scratch, exactly as before. */
+  question_results?: QuestionResultWire[];
 }

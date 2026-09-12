@@ -255,3 +255,24 @@ def assess_schema() -> dict[str, Any]:
         "required": ["score", "correct", "misconceptions", "feedback", "needs_review"],
         "additionalProperties": False,
     }
+
+
+def grade_schema() -> dict[str, Any]:
+    """One answer's verdict.
+
+    `correct` is NOT here: it is derived from `score` server-side, exactly as it
+    is for a full assessment. A model asked for both will occasionally return a
+    score of 90 alongside correct=false, which shows a learner a failing verdict
+    on a passing answer -- and this verdict is rendered inline, a foot from the
+    text they just wrote.
+    """
+    return {
+        "type": "object",
+        "properties": {
+            "score": {"type": "integer", "minimum": 0, "maximum": 100},
+            "feedback": {"type": "string"},
+            "misconception": {"type": ["string", "null"]},
+        },
+        "required": ["score", "feedback", "misconception"],
+        "additionalProperties": False,
+    }

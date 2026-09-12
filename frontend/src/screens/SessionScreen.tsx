@@ -135,6 +135,7 @@ export function SessionScreen() {
   const practiceAbort = useRef<AbortController | null>(null);
   const explainAbort = useRef<AbortController | null>(null);
   const assessAbort = useRef<AbortController | null>(null);
+  const gradeAbort = useRef<AbortController | null>(null);
   useEffect(
     () => () => {
       hintAbort.current?.abort();
@@ -143,6 +144,7 @@ export function SessionScreen() {
       // Unmount only. Aborting this on a dependency change deadlocked the
       // session permanently on the evaluating screen -- see the evaluate effect.
       assessAbort.current?.abort();
+      gradeAbort.current?.abort();
     },
     [],
   );
@@ -322,6 +324,10 @@ export function SessionScreen() {
               conceptName: st.lesson!.conceptName,
               lesson: st.lesson!,
               answers: st.answers,
+              // The verdicts the learner was already shown. The server computes
+              // the overall score from these and the model writes only the
+              // narrative, so the recap cannot contradict the lesson.
+              questionResults: st.results,
             },
             // Previously unsignalled, so leaving mid-grade billed for a
             // generation nobody would ever read.
@@ -421,15 +427,94 @@ export function SessionScreen() {
       : null;
   const slides = st.lesson?.slides ?? [];
 
-  function check() {
-    if (!q) return;
-    const value = q.type === 'multipleChoice' ? (st.selected ?? '') : st.draft.trim();
-    const verdict = gradeLocally(q, value);
-    // Three verdicts, three cues. An ungraded answer gets its own neutral note
-    // rather than borrowing the "correct" one, for the same reason the UI
-    // refuses to call it correct.
-    playCue(verdict === true ? 'correct' : verdict === false ? 'incorrect' : 'ungraded');
-    send({ type: 'CHECK', payload: { correct: verdict } });
+  /**
+   * MULTIPLE CHOICE IS CHECKED HERE. PROSE IS SENT TO THE GRADER.
+   *
+   * The split is the fix for "wrong during the lesson, right in the recap".
+   * Both verdicts were real; they came from different graders. The session
+   * asked domain/grade.ts, which matches rubric keywords on token boundaries,
+   * and the recap asked a model, which reads. Word matching fails in both
+   * directions at once:
+   *
+   *   "Conditioning changes the denominators"       -> marked WRONG
+   *        (rubric said "conditional"/"denominator"; a plural missed)
+   *   "Hannibal captured many cities but not Rome"  -> marked RIGHT
+   *        (all three keywords present, and a bag of words cannot see "not")
+   *
+   * No tuning fixes that. Negation is invisible to the technique, so a correct
+   * answer and its exact opposite score identically. Prose needs a reader.
+   *
+   * Multiple choice deliberately does NOT go to the model: the answer IS one of
+   * the options, so comparison is not an approximation of the right check, it
+   * is the right check -- instant, free, and incapable of disagreeing with the
+   * recap because the recap is handed this same verdict.
+   */
+  async function check() {
+    if (!q || st.grading) return;
+
+    if (q.type === 'multipleChoice') {
+      const value = st.selected ?? '';
+      const verdict = gradeLocally(q, value);
+      playCue(verdict === true ? 'correct' : verdict === false ? 'incorrect' : 'ungraded');
+      send({
+        type: 'CHECK',
+        payload: {
+          correct: verdict,
+          gradedBy: 'exact',
+          // The lesson already says what choosing THIS distractor reveals, so a
+          // wrong pick names a real misconception without a second model call.
+          misconception: verdict === false ? (q.misconceptionOnWrong?.[value] ?? null) : null,
+        },
+      });
+      return;
+    }
+
+    const value = st.draft.trim();
+    if (!value) return;
+    send({ type: 'GRADING' });
+    const ctrl = new AbortController();
+    gradeAbort.current?.abort();
+    gradeAbort.current = ctrl;
+
+    try {
+      const r = await ai.gradeAnswer(
+        { topic: course!.topic, conceptName: concept!.name, question: q, answer: value },
+        { signal: ctrl.signal },
+      );
+      if (ctrl.signal.aborted) return;
+      playCue(r.correct ? 'correct' : 'incorrect');
+      send({
+        type: 'CHECK',
+        payload: {
+          correct: r.correct,
+          score: r.score,
+          feedback: r.feedback,
+          misconception: r.misconception,
+          gradedBy: 'model',
+        },
+      });
+    } catch (e) {
+      if (ctrl.signal.aborted) return;
+      /**
+       * The grader is unreachable, so fall back to keyword matching -- and SAY
+       * SO, because it is a materially worse verdict and the learner is about
+       * to be told they were wrong by something that cannot read.
+       *
+       * Falling back silently would be the same lie in a new place: the whole
+       * complaint was two graders disagreeing without either admitting which
+       * one was speaking.
+       */
+      const verdict = gradeLocally(q, value);
+      playCue(verdict === true ? 'correct' : verdict === false ? 'incorrect' : 'ungraded');
+      send({
+        type: 'CHECK',
+        payload: {
+          correct: verdict,
+          feedback: `${describeAiError(e).title} — checked for key words on this device instead, which cannot judge meaning.`,
+          gradedBy: 'local',
+        },
+      });
+    }
   }
 
   /**
@@ -855,14 +940,15 @@ export function SessionScreen() {
                   placeholder="Explain it in your own words…"
                   onChange={(e) => send({ type: 'DRAFT', payload: { value: e.target.value } })}
                 />
-                {/* True in both modes, so it does not have to lie in either: the
-                    instant check is keyword overlap, and the score on the
-                    results screen comes from the full assessment. The previous
-                    copy promised a real model "when the backend is connected",
-                    which went stale the moment it was. */}
+                {/* Rewritten because the mechanism changed underneath it. This
+                    used to warn that the instant check "looks for key ideas,
+                    not meaning" and that the real score came later -- an honest
+                    description of a design where two graders disagreed. Now
+                    there is one grader and one number, so the copy says that
+                    instead of apologising for the gap. */}
                 <p className={s.gradingNote}>
-                  The instant check looks for key ideas, not meaning. Your score comes from the full
-                  assessment at the end.
+                  Marked on meaning, not wording — your own phrasing is fine. This mark is the one
+                  that counts towards your score.
                 </p>
               </>
             )}
@@ -989,12 +1075,25 @@ export function SessionScreen() {
                       : 'Recorded — not graded'}
                 </div>
 
-                {/* Rubric answers say WHICH key ideas landed. "Offline grading"
-                    is only honest if it shows its working. */}
-                {rubric && (
+                {/* The grader's own sentence about THIS answer. Previously the
+                    only thing shown for a short answer was a keyword tally,
+                    which is what a reader was left to argue with when the recap
+                    later disagreed. */}
+                {st.lastFeedback && (
+                  <div className={s.graderNote} data-source={st.lastGradedBy ?? undefined}>
+                    {st.lastFeedback}
+                  </div>
+                )}
+
+                {/* Shown ONLY when the keyword fallback produced the verdict.
+                    It cannot see negation, so it is capable of marking an
+                    answer and its exact opposite the same -- presenting that
+                    as a considered judgement would be the original bug wearing
+                    a different hat. */}
+                {st.lastGradedBy === 'local' && rubric && (
                   <div className={s.rubric}>
                     <span className={s.rubricNote}>
-                      Offline grading — checks for key ideas ({rubric.found.length}/{rubric.required})
+                      Checked on this device — key words only ({rubric.found.length}/{rubric.required})
                     </span>
                     <span className={s.rubricChips}>
                       {rubric.found.map((k) => (
@@ -1019,8 +1118,8 @@ export function SessionScreen() {
                 )}
                 {st.lastCorrect === null && (
                   <div className={s.verdictWhy}>
-                    This one has no answer key, so we recorded it without scoring it. Your final
-                    score comes from the full assessment.
+                    This one has no answer key, so it was recorded without being scored — and it
+                    does not count against you.
                   </div>
                 )}
                 {st.lastCorrect === true && q.why && <div className={s.verdictWhy}>{q.why}</div>}
@@ -1053,7 +1152,10 @@ export function SessionScreen() {
 
             {st.stage === 'attempt' && (
               <Press size="lg" disabled={!canCheck(st)} onClick={check}>
-                Check
+                {/* Free responses are graded by a model now, which is about a
+                    second. Without a pending label the button sits there
+                    looking unclicked for the whole round trip. */}
+                {st.grading ? 'Marking…' : 'Check'}
               </Press>
             )}
 

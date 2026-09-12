@@ -130,3 +130,9 @@ export function isRecommendationWire(v: unknown): boolean {
   if (!isStr(v.reason)) return false;
   return isArr(v.concept_names) && v.concept_names.every(isStr);
 }
+
+export function isGradeWire(v: unknown): boolean {
+  if (!isObj(v)) return false;
+  if (!isNum(v.score) || typeof v.correct !== 'boolean' || !isStr(v.feedback)) return false;
+  return v.misconception == null || isStr(v.misconception);
+}

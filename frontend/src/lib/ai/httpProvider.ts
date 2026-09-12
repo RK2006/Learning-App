@@ -25,6 +25,8 @@ import type {
   GenerateLessonRequest,
   GeneratePathRequest,
   GenerateQuestionsRequest,
+  GradeAnswerRequest,
+  GradeResult,
   HintResult,
   NextRecommendation,
   RecommendNextRequest,
@@ -38,6 +40,7 @@ import type {
   ApiErrorWire,
   AssessmentResultWire,
   ExplanationResponseWire,
+  GradeResponseWire,
   HintResponseWire,
   LessonWire,
   QuestionsResponseWire,
@@ -51,6 +54,8 @@ import {
   toConcept,
   toExplainWire,
   toExtendWire,
+  toGradeResult,
+  toGradeWire,
   toHintResult,
   toHintWire,
   toLesson,
@@ -66,6 +71,7 @@ import {
 import {
   isAssessmentWire,
   isExplanationWire,
+  isGradeWire,
   isHintWire,
   isLessonWire,
   isQuestionsWire,
@@ -230,11 +236,17 @@ export const httpProvider: AiProvider = {
       '/assess',
       // conceptName is sent now. It was computed by the caller and dropped
       // here, so the grader never learned which concept it was grading.
-      toAssessWire(req.topic, req.conceptName, req.answers, req.lesson),
+      toAssessWire(req.topic, req.conceptName, req.answers, req.lesson, req.questionResults ?? []),
       opts,
     );
     if (!isAssessmentWire(raw)) bad('/assess');
     return toAssessment(raw as AssessmentResultWire);
+  },
+
+  async gradeAnswer(req: GradeAnswerRequest, opts?: RequestOpts): Promise<GradeResult> {
+    const raw = await post<unknown>('/grade', toGradeWire(req), opts);
+    if (!isGradeWire(raw)) bad('/grade');
+    return toGradeResult(raw as GradeResponseWire);
   },
 
   async generateHint(req: GenerateHintRequest, opts?: RequestOpts): Promise<HintResult> {

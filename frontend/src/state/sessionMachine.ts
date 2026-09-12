@@ -1,4 +1,5 @@
 import type { AiErrorKind } from '../lib/ai/contracts';
+import type { QuestionResult } from '../lib/ai/contracts';
 import type { AssessmentResult, Lesson, Question, SessionMode } from '../types/domain';
 
 /**
@@ -35,6 +36,31 @@ export interface SessionState {
   answers: Record<string, string>;
   revealed: boolean;
   lastCorrect: boolean | null;
+  /** True while a free-response answer is with the grader. */
+  grading: boolean;
+  /** The grader's one-line note on the answer just submitted. */
+  lastFeedback: string | null;
+  /**
+   * Which grader produced `lastCorrect`.
+   *
+   * 'model'  -- graded on meaning.
+   * 'exact'  -- multiple choice, compared against the option. Not an
+   *             approximation of the right check; it IS the right check.
+   * 'local'  -- the offline keyword fallback, because the grader was
+   *             unreachable. The UI must SAY so: it cannot see negation, so
+   *             "did not capture Rome" and "captured Rome" score the same, and
+   *             presenting that as a considered verdict would be a lie.
+   */
+  lastGradedBy: 'model' | 'exact' | 'local' | null;
+  /**
+   * Every verdict this session, in order.
+   *
+   * Sent to /assess so the recap SUMMARISES rather than re-judges. Without it
+   * the session graded by keyword and the recap graded by meaning, and a
+   * learner was told they were wrong mid-lesson and right at the end about the
+   * same sentence.
+   */
+  results: QuestionResult[];
   correctCount: number;
   combo: number;
   bestCombo: number;
@@ -80,7 +106,18 @@ export type SessionAction =
   | { type: 'HINT'; payload: { text: string; exhausted?: boolean } }
   /** `correct: null` means UNGRADED -- no answer key and no rubric. It is not
    *  a synonym for false, and it must never be coerced to true. */
-  | { type: 'CHECK'; payload: { correct: boolean | null } }
+  | { type: 'GRADING' }
+  | {
+      type: 'CHECK';
+      payload: {
+        correct: boolean | null;
+        /** 0..100. Defaults to 100/0 from `correct` when the grader gave none. */
+        score?: number;
+        feedback?: string | null;
+        misconception?: string | null;
+        gradedBy?: 'model' | 'exact' | 'local';
+      };
+    }
   | { type: 'SKIP' }
   | { type: 'CONTINUE' }
   | {
@@ -136,6 +173,10 @@ export function initSession(init: SessionInit): SessionState {
     answers: {},
     revealed: false,
     lastCorrect: null,
+    grading: false,
+    lastFeedback: null,
+    lastGradedBy: null,
+    results: [],
     correctCount: 0,
     combo: 0,
     bestCombo: 0,
@@ -171,7 +212,7 @@ export function isLastQuestion(s: SessionState): boolean {
  *  gate would reject the correct 15-character answer `P(A and B)/P(B)`. */
 export function canCheck(s: SessionState): boolean {
   const q = currentQuestion(s);
-  if (!q) return false;
+  if (!q || s.grading) return false;
   return q.type === 'multipleChoice' ? s.selected != null : s.draft.trim().length > 0;
 }
 
@@ -222,11 +263,29 @@ export function sessionReducer(s: SessionState, a: SessionAction): SessionState 
         hintsExhausted: a.payload.exhausted ?? s.hintsExhausted,
       };
 
+    case 'GRADING':
+      return { ...s, grading: true };
+
     case 'CHECK': {
       const q = currentQuestion(s);
       if (!q) return s;
       const value = q.type === 'multipleChoice' ? (s.selected ?? '') : s.draft.trim();
       const correct = a.payload.correct;
+      // Partial credit where the grader gave it; otherwise the boolean decides.
+      // An ungraded answer contributes NOTHING rather than zero -- scoring it 0
+      // would punish the learner for our missing answer key.
+      const score = a.payload.score ?? (correct === true ? 100 : 0);
+      const result: QuestionResult | null =
+        correct === null
+          ? null
+          : {
+              questionId: q.id,
+              prompt: q.prompt,
+              answer: value,
+              score,
+              correct: correct === true,
+              misconception: a.payload.misconception ?? null,
+            };
       // Ungraded answers leave the combo and the hearts exactly where they are.
       // Breaking a streak on a question we could not grade punishes the user for
       // our own missing answer key; rewarding it is the bug this replaces.
@@ -235,7 +294,11 @@ export function sessionReducer(s: SessionState, a: SessionAction): SessionState 
         ...s,
         stage: 'feedback',
         revealed: true,
+        grading: false,
         lastCorrect: correct,
+        lastFeedback: a.payload.feedback ?? null,
+        lastGradedBy: a.payload.gradedBy ?? null,
+        results: result ? [...s.results, result] : s.results,
         answers: { ...s.answers, [q.id]: value },
         correctCount: s.correctCount + (correct === true ? 1 : 0),
         combo,
@@ -269,6 +332,9 @@ export function sessionReducer(s: SessionState, a: SessionAction): SessionState 
         draft: '',
         revealed: false,
         lastCorrect: null,
+        lastFeedback: null,
+        lastGradedBy: null,
+        grading: false,
         hintText: null,
         // Per-question, so the next question's first hint is a first hint.
         hintsForQuestion: [],

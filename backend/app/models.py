@@ -131,6 +131,62 @@ class AssessRequest(BaseModel):
     concept_name: str = ""
     lesson: "LessonBody"
     answers: Dict[str, str] = Field(default_factory=dict)
+    # Optional so an older client still works, in which case the model grades
+    # from scratch exactly as before. When present these are AUTHORITATIVE: the
+    # score is computed from them and the model is told not to contradict them.
+    question_results: List["QuestionResult"] = Field(default_factory=list)
+
+
+class GradeAnswerRequest(BaseModel):
+    """Grade one free-response answer, mid-session.
+
+    `protected_namespaces` is cleared because `model_answer` collides with
+    Pydantic's reserved `model_` prefix. Renaming it would be worse: the field
+    is the MODEL ANSWER to a question, which is what a teacher calls it, and
+    wire.ts mirrors this file by hand.
+    """
+    model_config = {"protected_namespaces": ()}
+
+    topic: str
+    concept_name: str = ""
+    question_prompt: str
+    model_answer: str = ""
+    rubric_keywords: List[str] = Field(default_factory=list)
+    answer: str
+
+
+class GradeAnswerResponse(BaseModel):
+    score: int
+    correct: bool
+    feedback: str
+    misconception: str | None = None
+
+
+class QuestionResult(BaseModel):
+    """A verdict already reached for one question, sent back with the session.
+
+    THIS IS WHAT MAKES THE TWO GRADERS AGREE. Every question is graded once, as
+    it is answered -- multiple choice by exact comparison on the client, free
+    response by /grade. The final assessment is then handed those verdicts and
+    does NOT re-judge them; the server computes the overall score from these and
+    the model only writes the narrative.
+
+    Before this, the session graded each answer by keyword overlap and /assess
+    independently graded the whole thing by meaning, so a learner was told they
+    were wrong mid-lesson and right in the recap, about the same sentence. Two
+    opinions with nothing reconciling them. Now there is one opinion, recorded
+    once, and the summary is a summary rather than a second trial.
+    """
+    question_id: str
+    prompt: str = ""
+    answer: str = ""
+    score: int
+    correct: bool
+    # Named by /grade, which saw the answer AND the model answer for that one
+    # question. Carried here rather than re-derived at the end: a summariser
+    # shown only marks produces categories ("key figures", "historical events")
+    # instead of confusions, because it has nothing to diagnose from.
+    misconception: str | None = None
 
 
 class HintRequest(BaseModel):

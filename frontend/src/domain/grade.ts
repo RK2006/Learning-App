@@ -32,6 +32,37 @@ function tokens(s: string): string[] {
     .filter((w) => w.length > 1 && !STOP.has(w));
 }
 
+/**
+ * A poor man's stemmer, and it is worth being clear about why it exists.
+ *
+ * Exact token equality was rejecting ordinary English. A rubric keyword of
+ * "denominator" did not match "denominators"; "greeting" did not match
+ * "greetings"; "capture" did not match "captured". A learner wrote a correct
+ * answer and was told it was wrong because of a plural.
+ *
+ * Prefix agreement past a short floor catches that whole family without the
+ * cost of a real stemmer. The floor matters: without it "a" prefixes
+ * everything, and at three "cat" would satisfy "category".
+ *
+ * WHAT THIS STILL CANNOT DO, and no amount of word matching ever will: read
+ * negation. "Hannibal captured Rome" and "Hannibal did not capture Rome"
+ * contain the same words and score identically here, and one of them is the
+ * opposite of the other. That is not a bug to be tuned out -- it is the ceiling
+ * of the technique, and it is precisely why grading moved to the model. This
+ * function is now the FALLBACK for when the model cannot be reached, and the
+ * UI says so whenever it is what produced a verdict.
+ */
+function related(a: string, b: string): boolean {
+  if (a === b) return true;
+  const floor = 4;
+  if (a.length < floor || b.length < floor) return false;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  // Cap the overhang so "condition" does not satisfy "conditionalisation".
+  if (longer.length - shorter.length > 3) return false;
+  return longer.startsWith(shorter);
+}
+
 export interface RubricMatch {
   found: string[];
   missed: string[];
@@ -52,13 +83,13 @@ export interface RubricMatch {
  * that.
  */
 export function matchRubric(rubric: { keywords: string[]; required: number }, answer: string): RubricMatch {
-  const answerTokens = new Set(tokens(answer));
+  const answerTokens = tokens(answer);
   const found: string[] = [];
   const missed: string[] = [];
 
   for (const key of rubric.keywords) {
     const parts = tokens(key);
-    const hit = parts.length > 0 && parts.every((p) => answerTokens.has(p));
+    const hit = parts.length > 0 && parts.every((p) => answerTokens.some((a) => related(a, p)));
     (hit ? found : missed).push(key);
   }
 

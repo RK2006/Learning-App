@@ -15,6 +15,8 @@ import type {
   AssessRequestWire,
   ExplainRequestWire,
   ExtendPathRequestWire,
+  GradeRequestWire,
+  GradeResponseWire,
   HintRequestWire,
   HintResponseWire,
   LessonRequestWire,
@@ -47,11 +49,14 @@ import type {
 import type {
   ExplainDifferentlyRequest,
   ExtendPathRequest,
+  GradeAnswerRequest,
+  GradeResult,
   GenerateHintRequest,
   GenerateLessonRequest,
   GenerateQuestionsRequest,
   HintResult,
   NextRecommendation,
+  QuestionResult,
   RecommendNextRequest,
   TeachBackAnalysis,
   TeachBackRequest,
@@ -268,8 +273,29 @@ export function toAssessWire(
   conceptName: string,
   answers: Record<string, string>,
   lesson: Lesson,
+  results: QuestionResult[] = [],
 ): AssessRequestWire {
-  return { topic, concept_name: conceptName, answers, lesson: toLessonWire(lesson) };
+  return {
+    topic,
+    concept_name: conceptName,
+    answers,
+    lesson: toLessonWire(lesson),
+    // Omitted entirely when empty rather than sent as []: the server branches on
+    // "were any verdicts supplied", and an empty array is the same question as
+    // an absent field only if nobody later reads it as "everything scored zero".
+    ...(results.length
+      ? {
+          question_results: results.map((r) => ({
+            question_id: r.questionId,
+            prompt: r.prompt,
+            answer: r.answer,
+            score: r.score,
+            correct: r.correct,
+            ...(r.misconception ? { misconception: r.misconception } : {}),
+          })),
+        }
+      : {}),
+  };
 }
 
 /* ---- the request mappers for the tasks that gained routes ----
@@ -309,6 +335,29 @@ export function toExtendWire(r: ExtendPathRequest): ExtendPathRequestWire {
     level: LEVEL_OUT[r.level],
     after: r.after,
     concept_count: r.conceptCount,
+  };
+}
+
+export function toGradeWire(r: GradeAnswerRequest): GradeRequestWire {
+  return {
+    topic: r.topic,
+    concept_name: r.conceptName,
+    question_prompt: r.question.prompt,
+    // The model answer and rubric are context for the grader, not a checklist:
+    // the prompt says so explicitly, because handing a model a keyword list and
+    // asking it to grade is how you rebuild the keyword grader with extra steps.
+    model_answer: r.question.correctAnswer ?? '',
+    rubric_keywords: r.question.rubric?.keywords ?? [],
+    answer: r.answer,
+  };
+}
+
+export function toGradeResult(w: GradeResponseWire): GradeResult {
+  return {
+    score: clamp(Number(w.score) || 0, 0, 100),
+    correct: Boolean(w.correct),
+    feedback: w.feedback ?? '',
+    misconception: w.misconception ?? null,
   };
 }
 

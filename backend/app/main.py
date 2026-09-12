@@ -47,7 +47,7 @@ from app.limits import (
 )
 from app.llm import LlmClient
 from app.models import (
-    AssessRequest, AssessmentResult, ExplainRequest, ExplanationResponse,
+    AssessRequest, AssessmentResult, GradeAnswerRequest, GradeAnswerResponse, ExplainRequest, ExplanationResponse,
     ExtendPathRequest, HintRequest, HintResponse, LessonRequest, LessonResponse,
     QuestionsRequest, QuestionsResponse, RecommendRequest, RecommendationResponse,
     SetupRequest, SetupResponse, TeachBackRequest, TeachBackResponse,
@@ -282,13 +282,40 @@ def assess(payload: AssessRequest, request: Request) -> AssessmentResult:
     }
 
     lesson_body = payload.lesson.model_dump()
-    prompt = prompts.assess_prompt(topic, concept_name, lesson_body, answers)
+    results = [r.model_dump() for r in payload.question_results]
+    prompt = prompts.assess_prompt(topic, concept_name, lesson_body, answers, results)
     # NOT cached. Two learners can write the same answer and still deserve a
     # separately considered grade, and a cached assessment is the one response
     # in this service where a stale hit would be a lie about a person's work.
     data = llm.generate("assess", prompt, "assessment", schemas.assess_schema())
 
-    score = max(0, min(100, int(data.get("score", 0))))
+    if results:
+        # ARITHMETIC, not an opinion. The mean of marks the learner has already
+        # been shown, which is the only value that cannot contradict them. A
+        # second independent judgement here is exactly what produced "wrong
+        # during, right at the end" -- and no prompt wording fixes that, because
+        # the problem was having two graders at all rather than a badly behaved
+        # one.
+        score = round(sum(max(0, min(100, int(r["score"]))) for r in results) / len(results))
+    else:
+        score = max(0, min(100, int(data.get("score", 0))))
+
+    if results:
+        # Carried from the per-question markers, deduplicated, order preserved.
+        # Each was named by a grader that saw one answer against its model
+        # answer; a summariser given only percentages returns topic headings
+        # ("key figures", "historical events") rather than confusions, because
+        # there is nothing in front of it to diagnose.
+        seen: set[str] = set()
+        misconceptions = []
+        for r in results:
+            m = str(r.get("misconception") or "").strip()
+            if m and m.casefold() not in seen:
+                seen.add(m.casefold())
+                misconceptions.append(m)
+    else:
+        misconceptions = [m for m in (data.get("misconceptions") or []) if str(m).strip()]
+
     return AssessmentResult(
         score=score,
         # Recomputed from the score rather than trusted. The prompt states the
@@ -297,8 +324,69 @@ def assess(payload: AssessRequest, request: Request) -> AssessmentResult:
         # verdict on a passing score.
         correct=score >= 70,
         needs_review=score < 70,
-        misconceptions=[m for m in (data.get("misconceptions") or []) if str(m).strip()],
+        misconceptions=misconceptions,
         feedback=str(data.get("feedback") or ""),
+    )
+
+
+@app.post("/grade", response_model=GradeAnswerResponse)
+def grade_answer(payload: GradeAnswerRequest, request: Request) -> GradeAnswerResponse:
+    """Grade ONE free-response answer while the learner is still looking at it.
+
+    The client used to do this itself, by keyword overlap, and it could not read.
+    domain/grade.ts matches rubric keywords on exact token boundaries with no
+    stemming, so it failed in both directions simultaneously:
+
+        "Conditioning changes the denominators"     -> marked WRONG
+            (the rubric said "conditional"/"denominator"; a plural missed)
+        "Hannibal captured many cities but not Rome" -> marked RIGHT
+            (all three keywords present, and a bag of words cannot see "not")
+
+    Meanwhile /assess graded the same answers by meaning at the end of the
+    session. So the learner was told they were wrong mid-lesson and right in the
+    recap, about the same sentence, and neither verdict explained the other.
+
+    Multiple choice deliberately does NOT come here. There the answer IS one of
+    the options, so exact comparison is not an approximation of the right
+    check -- it is the right check, and it is instant and free.
+    """
+    _meter(request)
+    topic = sanitize(payload.topic, MAX_TOPIC, "topic")
+    concept_name = sanitize(payload.concept_name, MAX_CONCEPT_NAME, "concept_name")
+    question = sanitize(payload.question_prompt, MAX_FREE_TEXT, "question_prompt")
+    answer = sanitize(payload.answer, MAX_ANSWER, "answer")
+    if not question:
+        from app.errors import invalid
+        raise invalid("question_prompt is required to grade against.")
+
+    # An empty answer is a 0 without asking a model. Spending a call, and a
+    # second of the learner's time, to be told that nothing is worth nothing.
+    if not answer:
+        return GradeAnswerResponse(
+            score=0, correct=False,
+            feedback="Nothing was submitted for this one.", misconception=None,
+        )
+
+    model_answer = sanitize(payload.model_answer, MAX_FREE_TEXT, "model_answer")
+    keywords = sanitize_list(payload.rubric_keywords, 8, 80, "rubric_keywords")
+
+    prompt = prompts.grade_answer_prompt(topic, concept_name, question, model_answer, keywords, answer)
+    # NOT cached. Two learners writing the same words still each deserve a
+    # considered mark, and a cached verdict on a person's own writing is the
+    # one stale hit in this service that would be a lie about their work.
+    data = llm.generate("grade", prompt, "grade", schemas.grade_schema())
+
+    score = max(0, min(100, int(data.get("score", 0))))
+    misconception = (str(data.get("misconception")).strip()
+                     if data.get("misconception") else None)
+    return GradeAnswerResponse(
+        score=score,
+        # Derived, never asked for -- same rule as /assess. A model returning 90
+        # alongside correct=false would show a failing verdict on a passing
+        # answer, inches from the text the learner just wrote.
+        correct=score >= 70,
+        feedback=str(data.get("feedback") or ""),
+        misconception=misconception or None,
     )
 
 

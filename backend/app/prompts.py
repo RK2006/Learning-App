@@ -326,7 +326,8 @@ def questions_prompt(topic: str, concept_name: str, level: str, n: int,
 
 # ---------------------------------------------------------------- assess ---
 
-def assess_prompt(topic: str, concept_name: str, lesson: dict, answers: dict[str, str]) -> str:
+def assess_prompt(topic: str, concept_name: str, lesson: dict, answers: dict[str, str],
+                  results: list[dict] | None = None) -> str:
     """Grading.
 
     The scale sentence below is load-bearing. The schema has always constrained
@@ -344,6 +345,53 @@ def assess_prompt(topic: str, concept_name: str, lesson: dict, answers: dict[str
             f"{expected}\n    Learner answered: {fence(str(given))}"
         )
     qa = "\n\n".join(blocks) if blocks else "  (no questions were recorded)"
+
+    # When the session already graded each answer as it was given, this is a
+    # SUMMARY, not a retrial. The score is computed by the server from those
+    # verdicts and the model is told so explicitly -- otherwise it re-judges,
+    # disagrees, and the learner sees "Not quite" during the lesson and a pass
+    # at the end, for the same sentence.
+    if results:
+        graded = "\n".join(
+            f"  - {fence(str(r.get('prompt', '')))}\n"
+            f"      they wrote: {fence(str(r.get('answer', '')))}\n"
+            f"      ALREADY MARKED: {int(r.get('score', 0))}%"
+            f" ({'correct' if r.get('correct') else 'not correct'})"
+            + (f"\n      the marker noted: {fence(str(r.get('misconception')))}"
+               if r.get("misconception") else "")
+            for r in results
+        )
+        return "\n".join([
+            f"Summarise a learner's work on {fence(concept_name)} from the topic {fence(topic)}.",
+            "",
+            "Every answer below HAS ALREADY BEEN GRADED, one at a time, while they were "
+            "working. Those marks are final and are not yours to revisit:",
+            "",
+            graded,
+            "",
+            "Do NOT re-grade. Do not disagree with a mark, hint that one was harsh or "
+            "generous, or describe an answer marked correct as though it were wrong. The "
+            "learner was shown each of these verdicts already, and contradicting one now is "
+            "how they stop trusting either number.",
+            "",
+            "You are writing only:",
+            "",
+            "feedback: 2-3 sentences addressed to the learner, summing up the session as a "
+            "whole. Name what they got right before what to work on. It must be consistent "
+            "with the marks above -- if they scored well throughout, this is not the place to "
+            "find fault.",
+            "",
+            "misconceptions: leave this as an empty array. The individual markers already "
+            "named any misunderstandings they saw, and those are carried through directly -- "
+            "you are not in a position to add to them, because you can see the marks but not "
+            "the material each answer was graded against.",
+            "",
+            "score, correct and needs_review are computed from the marks above and whatever "
+            "you return for them is discarded, so do not spend effort on them.",
+            "",
+            DATA_RULE,
+            JSON_RULE,
+        ])
 
     return "\n".join([
         f"Evaluate a learner's work on {fence(concept_name)} from the topic {fence(topic)}.",
@@ -512,6 +560,75 @@ def recommend_prompt(topic: str, mastery: dict[str, int], due: list[str],
         "`concept_names` must contain only names from the list above, exactly as spelled there. "
         "Return an empty list for \"rest\". Never invent a concept that is not on the path.",
         "Give the reason in one sentence, addressed to the learner.",
+        "",
+        DATA_RULE,
+        JSON_RULE,
+    ]
+    return "\n".join(lines)
+
+
+# ----------------------------------------------------------- grade one ---
+
+def grade_answer_prompt(topic: str, concept_name: str, question: str,
+                        model_answer: str, rubric_keywords: list[str], answer: str) -> str:
+    """Grade ONE free-response answer, during the session.
+
+    This exists because keyword overlap cannot grade meaning, and the client was
+    doing exactly that. domain/grade.ts matches rubric keywords on exact token
+    boundaries with no stemming, which fails in both directions at once:
+
+      "Conditioning changes the denominators"   -> WRONG, because the rubric
+          said "conditional" and "denominator" and a plural does not match.
+      "Hannibal captured many cities but not Rome" -> RIGHT, because all three
+          keywords are present and a bag of words cannot see the word "not".
+
+    So a learner was told they were wrong mid-session and then told they were
+    right in the recap, because the recap asked a model and the session asked a
+    word list. Two graders, one of which could not read.
+
+    Kept deliberately narrow: one question, one answer, one verdict. Measured at
+    roughly a second, which is affordable inline where a full assessment is not.
+    """
+    lines = [
+        f"Grade one answer from a learner studying {fence(concept_name)} "
+        f"in {fence(topic)}.",
+        "",
+        f"Question: {fence(question)}",
+    ]
+    if model_answer:
+        lines.append(f"A model answer: {fence(model_answer)}")
+    if rubric_keywords:
+        joined = ", ".join(fence(k) for k in rubric_keywords)
+        lines.append(f"Ideas a good answer tends to contain: {joined}")
+    lines += [
+        "",
+        f"The learner wrote: {fence(answer)}",
+        "",
+        "score: an integer PERCENTAGE from 0 to 100 for THIS ONE answer. 100 means they have "
+        "the idea and expressed it correctly; 0 means they do not have it at all. This is a "
+        "percentage, not a count of anything.",
+        "",
+        "Grade MEANING, not wording. Judge it as a patient teacher marking by hand:",
+        "  - The learner's own phrasing is fine. Matching the model answer's vocabulary is not "
+        "required and not rewarded; a correct idea in plain words scores full marks.",
+        "  - The listed ideas are a guide to what matters, NOT a checklist. An answer that "
+        "conveys the idea using none of those words is still correct.",
+        "  - Read negation, conditionals and hedging carefully. 'X does not cause Y' and 'X "
+        "causes Y' are opposite answers, however similar they look.",
+        "  - Award partial credit for a partly-right answer, and say what is missing.",
+        "  - Spelling, grammar and typos do not cost marks unless the subject IS spelling or "
+        "grammar.",
+        "  - An answer that is off-topic, empty, or a guess at the question rather than an "
+        "answer to it scores 0.",
+        "",
+        "feedback: ONE short sentence addressed to the learner, said while they are still "
+        "looking at the question. If they are right, say what specifically was right. If not, "
+        "name the single thing to fix. Never more than one sentence, and never restate the "
+        "whole model answer -- they can read it themselves.",
+        "",
+        "misconception: if the answer reveals a specific misunderstanding, name it as a short "
+        "noun phrase ('reverses the condition and the event'). If it is merely incomplete, or "
+        "is simply correct, return null. Do not invent one to seem useful.",
         "",
         DATA_RULE,
         JSON_RULE,
