@@ -116,3 +116,31 @@
     white-space: nowrap;
   }
 }
+
+/* The mock-mode badge. Deliberately legible rather than subtle: it is the only
+   thing distinguishing simulated teaching material from the real thing, and a
+   marker nobody notices would be no better than the nothing it replaced. */
+.simulated {
+  flex: none;
+  margin-left: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--warn-border, #e0c069);
+  background: var(--warn-bg, #fdf6e3);
+  color: var(--warn-ink, #7a5c12);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: help;
+}
+
+@media (max-width: 420px) {
+  /* Shortened, never dropped: at narrow widths the stats can go, this cannot. */
+  .simulated {
+    margin-left: 6px;
+    padding: 3px 6px;
+    font-size: 0.6rem;
+  }
+}
