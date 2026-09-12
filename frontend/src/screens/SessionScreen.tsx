@@ -134,11 +134,15 @@ export function SessionScreen() {
   const hintAbort = useRef<AbortController | null>(null);
   const practiceAbort = useRef<AbortController | null>(null);
   const explainAbort = useRef<AbortController | null>(null);
+  const assessAbort = useRef<AbortController | null>(null);
   useEffect(
     () => () => {
       hintAbort.current?.abort();
       practiceAbort.current?.abort();
       explainAbort.current?.abort();
+      // Unmount only. Aborting this on a dependency change deadlocked the
+      // session permanently on the evaluating screen -- see the evaluate effect.
+      assessAbort.current?.abort();
     },
     [],
   );
@@ -276,7 +280,34 @@ export function SessionScreen() {
   useEffect(() => {
     if (st.stage !== 'evaluating' || !st.lesson || !course || committed) return;
     setCommitted(true);
+    /**
+     * The controller lives in a REF, and this effect returns no cleanup.
+     *
+     * It used to `return () => ctrl.abort()`, which deadlocked the session on
+     * the "Checking answers" screen, permanently. The sequence:
+     *
+     *   1. effect runs, setCommitted(true), /assess starts, cleanup registered
+     *   2. `committed` flips -- and it is IN the dependency array -- so React
+     *      re-runs the effect, which means first running the cleanup
+     *   3. the cleanup aborts the request that was still in flight
+     *   4. the effect body re-runs and returns at the `committed` guard, so
+     *      nothing restarts it
+     *   5. the aborted request rejects, the catch sees signal.aborted and
+     *      returns silently, and EVALUATED is never sent
+     *
+     * That is precisely the "ref guard plus abort-on-cleanup deadlocks" trap
+     * the load effect above is commented about. The two effects differ in one
+     * decisive way: the load effect has NO once-guard, so a re-run simply
+     * supersedes its own request, which is safe. This one does have a guard, so
+     * a re-run cancels without replacing.
+     *
+     * Aborting is still worth doing -- an abandoned /assess is a metered
+     * generation nobody will read -- but only when the player is genuinely
+     * going away. So the abort moved to the unmount-only effect alongside the
+     * hint, practice and explain controllers.
+     */
     const ctrl = new AbortController();
+    assessAbort.current = ctrl;
 
     (async () => {
       let assessment: AssessmentResult | null = null;
@@ -329,8 +360,7 @@ export function SessionScreen() {
         },
       });
     })();
-
-    return () => ctrl.abort();
+    // Deliberately no cleanup -- see the note above the controller.
   }, [st.stage, st.lesson, course, committed, app, dispatch, st]);
 
   /**
