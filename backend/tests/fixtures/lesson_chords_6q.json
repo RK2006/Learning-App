@@ -1,0 +1,145 @@
+{
+  "concept": "Diatonic chords",
+  "title": "Understanding Diatonic Chords in Music Theory",
+  "explanation": "Diatonic chords are chords that are built using notes from a specific key, following the scale of that key. Imagine a family: each member represents a different note in the scale, and together they make a harmonious group. For instance, in the key of C major, the diatonic chords would only use the notes C, D, E, F, G, A, and B, creating a set of chords that sound good together without introducing outside notes.",
+  "example": "Let’s explore the key of C major, which consists of the notes C, D, E, F, G, A, and B. From these notes, we can build the following diatonic chords:\n1. C major: C - E - G \n2. D minor: D - F - A \n3. E minor: E - G - B \n4. F major: F - A - C \n5. G major: G - B - D \n6. A minor: A - C - E \n7. B diminished: B - D - F \nThese chords are built solely from the notes in the C major scale and are referred to as its diatonic chords.",
+  "objectives": [
+    "Identify diatonic chords in a key.",
+    "Construct diatonic chords from a scale.",
+    "Recognize the relationship between scales and their corresponding diatonic chords."
+  ],
+  "slides": [
+    {
+      "id": "slide1",
+      "kind": "concept",
+      "heading": "What are Diatonic Chords?",
+      "body": "Diatonic chords are chords derived from the notes of a specific musical scale."
+    },
+    {
+      "id": "slide2",
+      "kind": "example",
+      "heading": "Example of Diatonic Chords in C Major",
+      "body": "The chords derived from the C major scale include:\n1. C major: C - E - G\n2. D minor: D - F - A\n3. E minor: E - G - B\n4. F major: F - A - C\n5. G major: G - B - D\n6. A minor: A - C - E\n7. B diminished: B - D - F."
+    },
+    {
+      "id": "slide3",
+      "kind": "contrast",
+      "heading": "Diatonic vs. Non-Diatonic Chords",
+      "body": "Diatonic chords use only the notes from the key's scale, while non-diatonic chords include notes not found in the scale, like a foreign family member."
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "prompt": "Which of the following represents a diatonic chord in the key of C major?",
+      "options": [
+        "D# minor",
+        "G major",
+        "C# major",
+        "B major"
+      ],
+      "correct_answer": "G major",
+      "why": "G major is built from notes within the C major scale, while the others include outside notes.",
+      "hint": "Think about which chord uses only the notes C, D, E, F, G, A, and B.",
+      "misconception_on_wrong": {
+        "D# minor": "This chord contains the note D#, which is not in C major.",
+        "C# major": "C# is not part of the C major scale."
+      },
+      "rubric": null
+    },
+    {
+      "id": "q2",
+      "type": "multiple-choice",
+      "prompt": "What is a characteristic of diatonic chords?",
+      "options": [
+        "Include all 12 notes of Western music",
+        "Are built using notes from a specific scale",
+        "Contain sharps and flats",
+        "Always sound dissonant"
+      ],
+      "correct_answer": "Are built using notes from a specific scale",
+      "why": "Diatonic chords are defined by their construction from the notes of a specific scale, while the other options are incorrect definitions.",
+      "hint": "Consider what it means to be 'diatonic' regarding scales.",
+      "misconception_on_wrong": {
+        "Include all 12 notes of Western music": "Diatonic chords only use a limited set of scale notes, not all 12.",
+        "Contain sharps and flats": "Diatonic refers to a specific scale's notes, usually without accidentals."
+      },
+      "rubric": null
+    },
+    {
+      "id": "q3",
+      "type": "short-answer",
+      "prompt": "Describe the difference between diatonic and non-diatonic chords.",
+      "options": null,
+      "correct_answer": "Diatonic chords use only notes from a specific scale, while non-diatonic chords include notes outside that scale.",
+      "why": "This response captures the fundamental distinction between diatonic and non-diatonic chords.",
+      "hint": "Focus on what defines each chord type.",
+      "misconception_on_wrong": null,
+      "rubric": {
+        "keywords": [
+          "diatonic",
+          "non-diatonic",
+          "scale"
+        ],
+        "required": 3
+      }
+    },
+    {
+      "id": "q4",
+      "type": "multiple-choice",
+      "prompt": "How many diatonic chords can be formed in the key of C major?",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct_answer": "7",
+      "why": "There are seven diatonic chords in the key of C major, each corresponding to a note of the scale.",
+      "hint": "Count the unique chords you can build from C, D, E, F, G, A, and B.",
+      "misconception_on_wrong": {
+        "5": "This number is fewer than the total unique chords in C major.",
+        "8": "This exceeds the number of natural notes in a single octave."
+      },
+      "rubric": null
+    },
+    {
+      "id": "q5",
+      "type": "multiple-choice",
+      "prompt": "Which chord is NOT a diatonic chord in the key of C major?",
+      "options": [
+        "C major",
+        "F major",
+        "D# minor",
+        "G major"
+      ],
+      "correct_answer": "D# minor",
+      "why": "D# minor contains D# which is not in the C major scale, making it non-diatonic.",
+      "hint": "Identify the chord that contains notes outside of the C major scale.",
+      "misconception_on_wrong": {
+        "C major": "C major is a foundational chord in the C major scale.",
+        "F major": "F major is built from notes in the C major scale."
+      },
+      "rubric": null
+    },
+    {
+      "id": "q6",
+      "type": "short-answer",
+      "prompt": "Name one diatonic chord in the key of A minor.",
+      "options": null,
+      "correct_answer": "A minor is one diatonic chord in the key of A minor.",
+      "why": "This responds accurately by identifying one of the chords in the A minor scale.",
+      "hint": "Recall the basic chords built from the A minor scale.",
+      "misconception_on_wrong": null,
+      "rubric": {
+        "keywords": [
+          "A minor",
+          "diatonic",
+          "chord"
+        ],
+        "required": 3
+      }
+    }
+  ]
+}

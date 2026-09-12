@@ -1,0 +1,90 @@
+{
+  "questions": [
+    {
+      "id": "Q1",
+      "type": "multiple-choice",
+      "prompt": "What was the primary cause of the Punic Wars?",
+      "options": [
+        "Territorial expansion",
+        "Trade rivalry",
+        "Cultural differences",
+        "Military alliances"
+      ],
+      "correct_answer": "Trade rivalry",
+      "why": "The Punic Wars were largely driven by competition for trade dominance in the Mediterranean, particularly between Rome and Carthage.",
+      "hint": "Think about the economic interests of both powers.",
+      "misconception_on_wrong": null,
+      "rubric": null
+    },
+    {
+      "id": "Q2",
+      "type": "multiple-choice",
+      "prompt": "Who was the famous Carthaginian general during the Second Punic War?",
+      "options": [
+        "Hannibal",
+        "Scipio",
+        "Cato",
+        "Hamilcar"
+      ],
+      "correct_answer": "Hannibal",
+      "why": "Hannibal is best known for his strategic maneuvers against Rome, including his famous crossing of the Alps.",
+      "hint": "Consider the general who led the famous march against Rome.",
+      "misconception_on_wrong": null,
+      "rubric": null
+    },
+    {
+      "id": "Q3",
+      "type": "short-answer",
+      "prompt": "Describe a major outcome of the Third Punic War.",
+      "options": null,
+      "correct_answer": "Carthage was destroyed.",
+      "why": "The Third Punic War resulted in the complete destruction of Carthage and solidified Roman dominance in the Mediterranean.",
+      "hint": "Think about what happened to Carthage at the end of the war.",
+      "misconception_on_wrong": null,
+      "rubric": {
+        "keywords": [
+          "Carthage",
+          "destruction",
+          "outcome",
+          "Roman"
+        ],
+        "required": 3
+      }
+    },
+    {
+      "id": "Q4",
+      "type": "multiple-choice",
+      "prompt": "What was the strategic significance of the Battle of Cannae?",
+      "options": [
+        "Turning point for Carthage",
+        "End of the Second Punic War",
+        "Start of the First Punic War",
+        "Victory for Rome"
+      ],
+      "correct_answer": "Turning point for Carthage",
+      "why": "The Battle of Cannae was a significant military victory for Hannibal and marked a critical point in the Second Punic War, showcasing the effectiveness of his tactics.",
+      "hint": "Consider how this battle changed the course of the war.",
+      "misconception_on_wrong": null,
+      "rubric": null
+    },
+    {
+      "id": "Q5",
+      "type": "short-answer",
+      "prompt": "What role did naval power play in the Punic Wars?",
+      "options": null,
+      "correct_answer": "Naval power was crucial for controlling trade routes and supply lines.",
+      "why": "Control of the sea was essential for both Rome and Carthage to dominate trade and resource distribution, impacting the wars significantly.",
+      "hint": "Think about the importance of sea routes in the conflict.",
+      "misconception_on_wrong": null,
+      "rubric": {
+        "keywords": [
+          "naval power",
+          "trade routes",
+          "importance",
+          "conflict"
+        ],
+        "required": 3
+      }
+    }
+  ]
+}

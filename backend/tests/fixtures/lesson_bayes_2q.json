@@ -1,0 +1,73 @@
+{
+  "concept": "Conditional Probability",
+  "title": "Understanding Conditional Probability",
+  "explanation": "Conditional probability is the probability of an event occurring given that another event has already occurred. This concept is essential in understanding how the occurrence of one event can affect the likelihood of another event.",
+  "example": "Suppose we have a standard deck of 52 playing cards. We want to calculate the probability of drawing a King, given that we have already drawn a heart. There are 13 hearts and only one of them is a King. The conditional probability P(King | Heart) is calculated as P(King and Heart) / P(Heart). This gives us P(King | Heart) = (1/52) / (13/52) = 1/13, meaning there is a 1 in 13 chance of drawing a King when we already know that we have drawn a heart.",
+  "objectives": [
+    "Define conditional probability.",
+    "Calculate conditional probabilities in given scenarios.",
+    "Differentiate conditional probability from joint probability."
+  ],
+  "slides": [
+    {
+      "id": "slide-1",
+      "kind": "concept",
+      "heading": "Defining Conditional Probability",
+      "body": "Conditional probability, denoted P(A | B), is the probability of event A occurring given that event B has occurred. This refines our assessment of probabilities based on additional information."
+    },
+    {
+      "id": "slide-2",
+      "kind": "contrast",
+      "heading": "Conditional Probability vs Joint Probability",
+      "body": "Joint probability P(A and B) measures the likelihood of both events A and B happening together, while conditional probability P(A | B) focuses solely on the probability of A under the condition that B is true."
+    },
+    {
+      "id": "slide-3",
+      "kind": "recap",
+      "heading": "Key Takeaways",
+      "body": "Conditional probability is a crucial concept in probability theory, allowing us to refine predictions and assessments based on known information."
+    }
+  ],
+  "questions": [
+    {
+      "id": "q-1",
+      "type": "multiple-choice",
+      "prompt": "What is the correct expression for conditional probability?",
+      "options": [
+        "P(A | B) = P(A and B) / P(A)",
+        "P(A | B) = P(A and B) / P(B)",
+        "P(B | A) = P(B) / P(A)",
+        "P(A and B) = P(A | B) x P(B)"
+      ],
+      "correct_answer": "P(A | B) = P(A and B) / P(B)",
+      "why": "The correct expression for conditional probability is the probability of both events A and B occurring divided by the probability of event B occurring.",
+      "hint": "Think about how the probabilities interact based on known conditions.",
+      "misconception_on_wrong": {
+        "P(A | B) = P(A and B) / P(A)": "This suggests incorrectly that conditioning on A alters the denominator.",
+        "P(B | A) = P(B) / P(A)": "This involves recognizing the relationship from B to A, which is not what we're asked for here.",
+        "P(A and B) = P(A | B) x P(B)": "This states the product rule, not the definition of conditional probability."
+      },
+      "rubric": null
+    },
+    {
+      "id": "q-2",
+      "type": "short-answer",
+      "prompt": "Explain in one sentence how to calculate conditional probability.",
+      "options": null,
+      "correct_answer": "To calculate conditional probability, divide the joint probability of both events occurring by the probability of the conditioning event.",
+      "why": "The formula establishes how to assess one event based on the occurrence of another through division of probabilities.",
+      "hint": "Consider the roles of numerator and denominator in the definition of conditional probability.",
+      "misconception_on_wrong": null,
+      "rubric": {
+        "keywords": [
+          "conditional",
+          "division",
+          "joint",
+          "event",
+          "probability"
+        ],
+        "required": 3
+      }
+    }
+  ]
+}

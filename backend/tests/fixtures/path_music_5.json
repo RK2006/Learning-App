@@ -1,0 +1,29 @@
+{
+  "concepts": [
+    {
+      "id": "1",
+      "name": "Understanding Rhythm as a Song's Pulse",
+      "order": 1
+    },
+    {
+      "id": "2",
+      "name": "Exploring Clefs and the Melody Map",
+      "order": 2
+    },
+    {
+      "id": "3",
+      "name": "Getting Familiar with Intervals: Musical Distances",
+      "order": 3
+    },
+    {
+      "id": "4",
+      "name": "Building Chords: The Building Blocks of Harmony",
+      "order": 4
+    },
+    {
+      "id": "5",
+      "name": "Crafting a Simple Song Structure",
+      "order": 5
+    }
+  ]
+}
